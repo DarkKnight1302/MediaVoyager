@@ -1,0 +1,6 @@
+@MediaVoyager_HostAddress = http://localhost:5211
+
+GET {{MediaVoyager_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
