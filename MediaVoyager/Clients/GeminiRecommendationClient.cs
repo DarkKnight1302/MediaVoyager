@@ -55,7 +55,7 @@
         /// <param name="favoriteMovies">A list of the user's favorite movies.</param>
         /// <param name="watchHistory">A list of movies the user has already watched.</param>
         /// <returns>The name of the recommended movie as a string.</returns>
-        public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory)
+        public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, int temperature = 1)
         {
             // 1. Wait for a slot in the rate limit window before proceeding.
             await WaitForRateLimitSlotAsync();
@@ -64,9 +64,9 @@
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
 
             // Correctly use the gemini-2.5-pro model and remove the API key from the URL.
-            var requestUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent";
+            var requestUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-            var requestBody = BuildGeminiRequest(favoriteMovies, watchHistory);
+            var requestBody = BuildGeminiRequest(favoriteMovies, watchHistory, temperature);
             var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -89,23 +89,23 @@
 
                 // Extract the movie name from the first candidate in the response.
                 return geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text?.Trim()
-                       ?? "No recommendation found.";
+                       ?? string.Empty;
             }
             catch (HttpRequestException ex)
             {
                 // Handle potential network or API errors
-                return $"Error calling Gemini API: {ex.Message}";
+                this.logger.LogError($"Error calling Gemini API: {ex.Message}");
             }
             catch (JsonException ex)
             {
                 // Handle errors in parsing the response
-                return $"Error parsing API response: {ex.Message}";
+                this.logger.LogError($"Error parsing API response: {ex.Message}");
             }
             catch (Exception e)
             {
                 this.logger.LogError($"Exception in movie recommendation : {e.Message} \n {e.StackTrace}", e);
-                return string.Empty;
             }
+            return string.Empty;
         }
 
         /// <summary>
@@ -154,31 +154,33 @@
         /// <summary>
         /// Builds the request body for the Gemini API call.
         /// </summary>
-        private GeminiRequest BuildGeminiRequest(List<string> favoriteMovies, List<string> watchHistory)
+        private GeminiRequest BuildGeminiRequest(List<string> favoriteMovies, List<string> watchHistory, int temperature)
         {
             // Helper function to format a list of movies into a string like "['Movie1', 'Movie2']"
-            Func<List<string>, string> formatMovieList = movies =>
-                $"['{string.Join("', '", movies.Select(m => m.Replace("'", "\\'")))}']";
+            Func<List<string>, string> formatMovieList = movies => $"[`{string.Join("`, `", movies.Select(m => m.Replace("`", "\\`")))}`]";
 
-            string prompt = $"Favourites Movies : {formatMovieList(favoriteMovies)}, \n Watch history : {formatMovieList(watchHistory)}";
+            string prompt1 = $"Favourite Movies : {formatMovieList(favoriteMovies)}";
+            string prompt2 = $"Watch history : {formatMovieList(watchHistory)}";
 
-            return new GeminiRequest
+            var request = new GeminiRequest
             {
                 SystemInstruction = new SystemInstruction
                 {
                     Parts = new List<Part>
                 {
-                    new Part { Text = "You're a movie recommendation bot, you will only recommend top rated movie based on given favourite movies and exclude the movies already in the watch history. Your output should only be the name of the recommended movie along with release year." }
+                    new Part { Text = "You're a movie recommendation bot, you will recommend top rated movie based on given favorites as reference and the recommended movie should not be part of watch history. Your output should only be the name of the recommended movie along with release year." }
                 }
                 },
                 Contents = new List<Content>
             {
                 new Content
                 {
-                    Parts = new List<Part> { new Part { Text = prompt } }
+                    Parts = new List<Part> { new Part { Text = prompt1 }, new Part { Text = prompt2 } }
                 }
             }
             };
+            request.generationConfig.temperature = temperature;
+            return request;
         }
 
         /// <summary>
@@ -198,12 +200,34 @@
         {
             [JsonPropertyName("system_instruction")]
             public SystemInstruction SystemInstruction { get; set; }
+
+            [JsonPropertyName("contents")]
             public List<Content> Contents { get; set; }
+
+            [JsonPropertyName("generationConfig")]
+            public GenerationConfig generationConfig = new GenerationConfig();
         }
 
-        private class SystemInstruction { public List<Part> Parts { get; set; } }
-        private class Content { public List<Part> Parts { get; set; } }
-        private class Part { public string Text { get; set; } }
+        private class GenerationConfig
+        {
+            public int temperature { get; set; } = 1;
+        }
+
+        private class SystemInstruction
+        {
+            [JsonPropertyName("parts")]
+            public List<Part> Parts { get; set; }
+        }
+        private class Content
+        {
+            [JsonPropertyName("parts")]
+            public List<Part> Parts { get; set; }
+        }
+        private class Part
+        {
+            [JsonPropertyName("text")]
+            public string Text { get; set; }
+        }
 
         // Response Models (Updated to match the full JSON structure)
         private class GeminiResponse
