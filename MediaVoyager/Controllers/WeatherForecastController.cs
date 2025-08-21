@@ -38,10 +38,10 @@ namespace MediaVoyager.Controllers
             // Create 4 concurrent tasks to simulate high load and test the rate limiter.
             var tasks = new List<Task<string>>
         {
-            client.GetMovieRecommendationAsync(favoriteMovies, watchHistory),
-            client.GetMovieRecommendationAsync(new List<string> { "The Dark Knight", "Inception", "The Prestige" }, watchHistory),
-            client.GetMovieRecommendationAsync(new List<string> { "Pulp Fiction", "Forrest Gump", "The Shawshank Redemption" }, watchHistory),
-            client.GetMovieRecommendationAsync(new List<string> { "Parasite", "Spirited Away", "Oldboy" }, watchHistory)
+            client.GetMovieRecommendationAsync(favoriteMovies, watchHistory, 1),
+            client.GetMovieRecommendationAsync(new List<string> { "The Dark Knight", "Inception", "The Prestige" }, watchHistory, 1),
+            client.GetMovieRecommendationAsync(new List<string> { "Pulp Fiction", "Forrest Gump", "The Shawshank Redemption" }, watchHistory, 1),
+            client.GetMovieRecommendationAsync(new List<string> { "Parasite", "Spirited Away", "Oldboy" }, watchHistory, 1)
         };
 
             // Await all tasks and print results as they complete.

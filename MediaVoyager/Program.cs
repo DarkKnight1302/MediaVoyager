@@ -12,7 +12,7 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<IGeminiRecommendationClient, GeminiRecommendationClient>();
-Registration.InitializeServices(builder.Services, "MediaVoyager", 5);
+Registration.InitializeServices(builder.Services, "MediaVoyager", 0);
 
 var app = builder.Build();
 
