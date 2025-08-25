@@ -1,11 +1,13 @@
-﻿namespace MediaVoyager.Entities
+﻿using MediaVoyager.Models;
+
+namespace MediaVoyager.Entities
 {
     public class UserMovies
     {
         public string id { get; set; }
 
-        public List<string> favouriteMovies { get; set; } = new List<string>();
+        public HashSet<Movie> favouriteMovies { get; set; } = new HashSet<Movie>();
 
-        public List<string> watchHistory { get; set; } = new List<string>();
+        public HashSet<Movie> watchHistory { get; set; } = new HashSet<Movie>();
     }
 }

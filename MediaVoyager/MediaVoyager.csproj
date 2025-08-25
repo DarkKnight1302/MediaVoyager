@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="9.0.8" />
     <PackageReference Include="NewHorizonLib" Version="1.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+    <PackageReference Include="TMDbLib" Version="2.2.0" />
   </ItemGroup>
 
 </Project>

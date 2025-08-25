@@ -1,11 +1,13 @@
-﻿namespace MediaVoyager.Entities
+﻿using MediaVoyager.Models;
+
+namespace MediaVoyager.Entities
 {
     public class UserTv
     {
         public string id { get; set; }
 
-        public List<string> favouriteTv { get; set; } = new List<string>();
+        public List<TvShow> favouriteTv { get; set; } = new List<TvShow>();
 
-        public List<string> watchHistory { get; set; } = new List<string>();
+        public List<TvShow> watchHistory { get; set; } = new List<TvShow>();
     }
 }
