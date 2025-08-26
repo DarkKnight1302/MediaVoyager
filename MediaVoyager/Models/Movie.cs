@@ -8,9 +8,7 @@
 
         public string Poster { get; set; }
 
-        public string Logo { get; set; }
-
-        public string ReleaseDate { get; set; }
+        public DateTime? ReleaseDate { get; set; }
 
         public bool Equals(Movie? other)
         {

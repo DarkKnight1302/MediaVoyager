@@ -2,6 +2,13 @@
   "dependencies": {
     "secrets1": {
       "type": "secrets.user"
+    },
+    "cosmosdb1": {
+      "serviceConnectorResourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('serviceConnectorResourceGroupName')]/providers/Microsoft.ServiceLinker/locations/centralindia/connectors/cosmosDbConnectionString_D4A0742F09",
+      "secretStore": "LocalSecretsFile",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.DocumentDB/databaseAccounts/databasenewhorizon-india",
+      "type": "cosmosdb.azure",
+      "connectionId": "cosmosDbConnectionString"
     }
   }
 }

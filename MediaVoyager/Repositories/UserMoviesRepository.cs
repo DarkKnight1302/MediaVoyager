@@ -32,7 +32,7 @@ namespace MediaVoyager.Repositories
             await container.UpsertItemAsync<UserMovies>(userMovies, new PartitionKey(userId));
         }
 
-        public async Task CreateUserMovies(string userId, List<Movie> favourites, List<Movie> watchHistory)
+        public async Task<UserMovies> CreateUserMovies(string userId, List<Movie> favourites, List<Movie> watchHistory)
         {
             var container = GetContainer();
             UserMovies userMovies = new UserMovies()
@@ -42,7 +42,8 @@ namespace MediaVoyager.Repositories
                 watchHistory = watchHistory.ToHashSet()
             };
 
-            await container.CreateItemAsync<UserMovies>(userMovies, new PartitionKey(userId));
+            var response = await container.CreateItemAsync<UserMovies>(userMovies, new PartitionKey(userId));
+            return response.Resource;
         }
 
         public async Task<UserMovies> GetUserMovies(string userId)
@@ -57,6 +58,12 @@ namespace MediaVoyager.Repositories
             {
                 return null;
             }
+        }
+
+        public async Task UpsertUserMovies(UserMovies userMovies)
+        {
+            var container = GetContainer();
+            await container.UpsertItemAsync<UserMovies>(userMovies, new PartitionKey(userMovies.id));
         }
 
         private Container GetContainer()

@@ -8,13 +8,11 @@ namespace MediaVoyager.Models
 
         public string Title { get; set; }
 
-        public string Logo { get; set; }
-
         public List<Genre> Genres { get; set; }
 
         public string OriginCountry { get; set; }
 
-        public string ReleaseDate { get; set; }
+        public DateTime? ReleaseDate { get; set; }
 
         public string Poster { get; set; }
 

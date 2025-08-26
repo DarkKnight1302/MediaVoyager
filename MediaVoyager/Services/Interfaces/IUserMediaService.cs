@@ -1,11 +1,12 @@
 ﻿using MediaVoyager.Models;
+using TMDbLib.Objects.Search;
 
 namespace MediaVoyager.Services.Interfaces
 {
     public interface IUserMediaService
     {
-        public Task AddMovieToWatchHistory(string userId, Movie movie);
+        public Task AddMoviesToWatchHistory(string userId, List<SearchMovie> movie);
 
-        public Task AddMovieToFavourites(string userID, Movie movie);
+        public Task AddMoviesToFavourites(string userID, List<SearchMovie> movie);
     }
 }

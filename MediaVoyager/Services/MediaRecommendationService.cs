@@ -14,22 +14,22 @@ namespace MediaVoyager.Services
 {
     public class MediaRecommendationService : IMediaRecommendationService
     {
-        private readonly TMDbClient tmdbClient;
         private readonly IUserMoviesRepository userMoviesRepository;
         private readonly IGeminiRecommendationClient geminiRecommendationClient;
+        private readonly string tmdbApiKey;
 
         public MediaRecommendationService(ISecretService secretService,
             IUserMoviesRepository userMoviesRepository,
             IGeminiRecommendationClient geminiRecommendationClient)
         {
-            string tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
-            this.tmdbClient = new TMDbClient(tmdbApiKey);
+            this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
             this.geminiRecommendationClient = geminiRecommendationClient;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
         {
+            TMDbClient tmdbClient = new TMDbClient(tmdbApiKey);
             UserMovies userMovies = await this.userMoviesRepository.GetUserMovies(userId).ConfigureAwait(false);
             if (userMovies == null)
             {
@@ -46,26 +46,33 @@ namespace MediaVoyager.Services
             {
                 return null;
             }
-            SearchContainer<SearchMovie> results = await this.tmdbClient.SearchMovieAsync(movie);
+            SearchContainer<SearchMovie> results = await tmdbClient.SearchMovieAsync(movie);
             if (results.Results.Count > 0)
             {
                 int movieId = results.Results[0].Id;
-                TMDbLib.Objects.Movies.Movie movieTmdb = await this.tmdbClient.GetMovieAsync(movieId);
+                TMDbLib.Objects.Movies.Movie movieTmdb = await tmdbClient.GetMovieAsync(movieId);
                 if (movieTmdb != null)
                 {
                     MovieResponse movieResponse = new MovieResponse()
                     {
                         Id = movieId.ToString(),
-                         Genres = movieTmdb.Genres,
-                          Logo = movieTmdb.
+                        Genres = movieTmdb.Genres,
+                        Poster = movieTmdb.PosterPath,
+                        OriginCountry = movieTmdb.ProductionCountries[0].Name,
+                        OverView = movieTmdb.Overview,
+                        ReleaseDate = movieTmdb.ReleaseDate,
+                        TagLine = movieTmdb.Tagline,
+                        Title = movieTmdb.Title
                     };
+                    return movieResponse;
                 }
             }
+            return null;
         }
 
         private string ConvertToEasyName(Movie movie)
         {
-            return $"{movie.Title} ({movie.ReleaseDate})";
+            return $"{movie.Title} ({movie.ReleaseDate.Value.Year})";
         }
     }
 }
