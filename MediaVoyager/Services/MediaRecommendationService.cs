@@ -5,6 +5,7 @@ using MediaVoyager.Repositories;
 using MediaVoyager.Services.Interfaces;
 using NewHorizonLib.Services;
 using TMDbLib.Client;
+using TMDbLib.Objects.Find;
 using TMDbLib.Objects.General;
 using TMDbLib.Objects.Movies;
 using TMDbLib.Objects.Search;
@@ -46,10 +47,13 @@ namespace MediaVoyager.Services
             {
                 return null;
             }
-            SearchContainer<SearchMovie> results = await tmdbClient.SearchMovieAsync(movie);
-            if (results.Results.Count > 0)
+            FindContainer findContainer = await tmdbClient.FindAsync(FindExternalSource.Imdb, movie).ConfigureAwait(false);
+
+            List<SearchMovie> results = findContainer.MovieResults;
+
+            if (results!= null && results.Count > 0)
             {
-                int movieId = results.Results[0].Id;
+                int movieId = results[0].Id;
                 TMDbLib.Objects.Movies.Movie movieTmdb = await tmdbClient.GetMovieAsync(movieId);
                 if (movieTmdb != null)
                 {

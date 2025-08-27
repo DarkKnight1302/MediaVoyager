@@ -168,7 +168,7 @@
                 {
                     Parts = new List<Part>
                 {
-                    new Part { Text = "You're a movie recommendation bot, you will recommend top rated movie based on given favorites as reference and the recommended movie should not be part of watch history. Your output should only be the name of the recommended movie along with release year." }
+                    new Part { Text = "You're a movie recommendation bot, you will recommend top rated movie based on given favorites as reference and the recommended movie should not be part of watch history. Your output should only be the IMDB ID of the movie" }
                 }
                 },
                 Contents = new List<Content>

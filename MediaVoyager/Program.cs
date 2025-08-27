@@ -4,6 +4,9 @@ using MediaVoyager.Repositories;
 using MediaVoyager.Services;
 using MediaVoyager.Services.Interfaces;
 using NewHorizonLib;
+using NewHorizonLib.Services;
+using System.Net;
+using TMDbLib.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +28,8 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+string tmdbAuth = app.Services.GetService<ISecretService>().GetSecretValue("tmdb_auth");
+SecretUtility.tmdbAuthHeader = tmdbAuth;
 app.UseAuthentication();
 app.UseAuthorization();
 // Configure the HTTP request pipeline.
