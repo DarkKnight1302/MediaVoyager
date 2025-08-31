@@ -1,0 +1,42 @@
+﻿{
+  respUs: {
+    id: Id_1,
+    titles: [
+      {
+        iso_3166_1: US,
+        title: Die Hard 5,
+        type: informal title
+      },
+      {
+        iso_3166_1: US,
+        title: Duro de matar 5,
+        type: 
+      },
+      {
+        iso_3166_1: US,
+        title: Die Hard 5 - A Good Day to Die Hard,
+        type: 
+      }
+    ]
+  },
+  respFrench: {
+    id: Id_1,
+    titles: [
+      {
+        iso_3166_1: FR,
+        title: Die Hard 5 - Belle journée pour mourir,
+        type: 
+      }
+    ]
+  },
+  respCaDefault: {
+    id: Id_1,
+    titles: [
+      {
+        iso_3166_1: CA,
+        title: Une Belle journée pour crever,
+        type: 
+      }
+    ]
+  }
+}

@@ -6,8 +6,6 @@
 
         public string Title { get; set; }
 
-        public string Poster { get; set; }
-
         public DateTime? ReleaseDate { get; set; }
 
         public bool Equals(Movie? other)

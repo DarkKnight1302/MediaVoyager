@@ -1,0 +1,7 @@
+﻿{
+  headquarters: Los Gatos, California,
+  homepage: http://www.netflix.com,
+  id: Id_1,
+  name: Netflix,
+  origin_country: 
+}

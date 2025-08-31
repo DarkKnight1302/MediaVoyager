@@ -1,0 +1,12 @@
+﻿{
+  avatar: {
+    gravatar: {
+      hash: Guid_1
+    }
+  },
+  id: Id_1,
+  iso_3166_1: BE,
+  iso_639_1: en,
+  name: Test Name,
+  username: TMDbTestAccount
+}

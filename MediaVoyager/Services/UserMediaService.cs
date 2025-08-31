@@ -40,7 +40,6 @@ namespace MediaVoyager.Services
                 new Movie()
                 {
                     Id = x.Id.ToString(),
-                    Poster = x.PosterPath,
                     ReleaseDate = x.ReleaseDate,
                     Title = x.Title
                 }).ToList();

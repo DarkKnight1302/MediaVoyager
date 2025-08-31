@@ -1,0 +1,158 @@
+﻿{
+  genres: [
+    {
+      id: Id_1,
+      name: Adventure
+    },
+    {
+      id: Id_2,
+      name: Fantasy
+    },
+    {
+      id: Id_3,
+      name: Animation
+    },
+    {
+      id: Id_4,
+      name: Drama
+    },
+    {
+      id: Id_5,
+      name: Horror
+    },
+    {
+      id: Id_6,
+      name: Action
+    },
+    {
+      id: Id_7,
+      name: Comedy
+    },
+    {
+      id: Id_8,
+      name: History
+    },
+    {
+      id: Id_9,
+      name: Western
+    },
+    {
+      id: Id_10,
+      name: Thriller
+    },
+    {
+      id: Id_11,
+      name: Crime
+    },
+    {
+      id: Id_12,
+      name: Documentary
+    },
+    {
+      id: Id_13,
+      name: Science Fiction
+    },
+    {
+      id: Id_14,
+      name: Mystery
+    },
+    {
+      id: Id_15,
+      name: Music
+    },
+    {
+      id: Id_16,
+      name: Romance
+    },
+    {
+      id: Id_17,
+      name: Family
+    },
+    {
+      id: Id_18,
+      name: War
+    },
+    {
+      id: Id_19,
+      name: TV Movie
+    }
+  ],
+  genresDanish: [
+    {
+      id: Id_1,
+      name: Eventyr
+    },
+    {
+      id: Id_2,
+      name: Fantasy
+    },
+    {
+      id: Id_3,
+      name: Animation
+    },
+    {
+      id: Id_4,
+      name: Drama
+    },
+    {
+      id: Id_5,
+      name: Gyser
+    },
+    {
+      id: Id_6,
+      name: Action
+    },
+    {
+      id: Id_7,
+      name: Komedie
+    },
+    {
+      id: Id_8,
+      name: Historie 
+    },
+    {
+      id: Id_9,
+      name: Western
+    },
+    {
+      id: Id_10,
+      name: Thriller
+    },
+    {
+      id: Id_11,
+      name: Kriminalitet
+    },
+    {
+      id: Id_12,
+      name: Documentary
+    },
+    {
+      id: Id_13,
+      name: Sci-fi
+    },
+    {
+      id: Id_14,
+      name: Mysterium
+    },
+    {
+      id: Id_15,
+      name: Musik
+    },
+    {
+      id: Id_16,
+      name: Romantik
+    },
+    {
+      id: Id_17,
+      name: Familie
+    },
+    {
+      id: Id_18,
+      name: Krig
+    },
+    {
+      id: Id_19,
+      name: TV film
+    }
+  ]
+}

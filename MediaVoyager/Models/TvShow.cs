@@ -6,12 +6,6 @@
 
         public string Title { get; set; }
 
-        public string Poster { get; set; }
-
-        public string Logo { get; set; }
-
-        public int NumberOfSeasons { get; set; }
-
         public bool Equals(TvShow? other)
         {
             if (other == null)

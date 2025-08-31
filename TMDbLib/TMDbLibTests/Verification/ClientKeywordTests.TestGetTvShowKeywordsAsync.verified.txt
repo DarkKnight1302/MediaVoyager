@@ -1,0 +1,25 @@
+﻿{
+  id: Id_1,
+  results: [
+    {
+      id: Id_2,
+      name: geek
+    },
+    {
+      id: Id_3,
+      name: nerd
+    },
+    {
+      id: Id_4,
+      name: friends
+    },
+    {
+      id: Id_5,
+      name: scientist
+    },
+    {
+      id: Id_6,
+      name: sitcom
+    }
+  ]
+}

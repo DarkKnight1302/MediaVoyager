@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>TMDbLib</AssemblyName>
+    <PackageId>TMDbLib</PackageId>
+    <Description>.NET Client library for The Movie Database (https://www.themoviedb.org/)</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4-beta1" />
+    <PackageReference Include="RestSharp" Version="112.1.0" />
+  </ItemGroup>
+
+  <!-- Analyzers -->
+
+</Project>

@@ -1,0 +1,41 @@
+﻿{
+  id: Id_1,
+  stills: [
+    {
+      aspect_ratio: 1.778,
+      file_path: <non-empty>,
+      height: 1080,
+      width: 1920
+    },
+    {
+      aspect_ratio: 1.778,
+      file_path: <non-empty>,
+      height: 1080,
+      width: 1920
+    },
+    {
+      aspect_ratio: 1.476,
+      file_path: <non-empty>,
+      height: 271,
+      width: 400
+    },
+    {
+      aspect_ratio: 1.778,
+      file_path: <non-empty>,
+      height: 1080,
+      width: 1920
+    },
+    {
+      aspect_ratio: 1.778,
+      file_path: <non-empty>,
+      height: 1080,
+      width: 1920
+    },
+    {
+      aspect_ratio: 1.778,
+      file_path: <non-empty>,
+      height: 1080,
+      width: 1920
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+﻿{
+  aspect_ratio: 0.667,
+  file_path: <non-empty>,
+  height: 1500,
+  width: 1000
+}

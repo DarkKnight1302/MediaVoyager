@@ -1,0 +1,9 @@
+﻿{
+  id: Id_1,
+  results: [
+    {
+      name: American Movie Classics,
+      type: 1984–2002
+    }
+  ]
+}
