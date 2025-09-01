@@ -23,7 +23,6 @@ builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationService>();
 builder.Services.AddSingleton<IUserMediaService, UserMediaService>();
-builder.Services.AddSingleton<IEmailService, EmailService>();
 
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();
