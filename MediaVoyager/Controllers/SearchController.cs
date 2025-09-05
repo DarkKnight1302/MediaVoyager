@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using NewHorizonLib.Attributes;
 using NewHorizonLib.Services;
 using TMDbLib.Client;
 using TMDbLib.Objects.General;
@@ -10,6 +11,7 @@ namespace MediaVoyager.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [RateLimit(2, 1)]
     public class SearchController : ControllerBase
     {
         private readonly TMDbClient tmdbClient;

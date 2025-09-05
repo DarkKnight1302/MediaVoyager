@@ -4,6 +4,7 @@ using MediaVoyager.Repositories;
 using MediaVoyager.Services;
 using MediaVoyager.Services.Interfaces;
 using NewHorizonLib;
+using NewHorizonLib.Extensions;
 using NewHorizonLib.Services;
 using NewHorizonLib.Services.Interfaces;
 using System.Net;
@@ -29,6 +30,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.UseRateLimiting();
 string tmdbAuth = app.Services.GetService<ISecretService>().GetSecretValue("tmdb_auth");
 SecretUtility.tmdbAuthHeader = tmdbAuth;
 
