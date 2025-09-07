@@ -1,5 +1,6 @@
 using MediaVoyager.Clients;
 using MediaVoyager.Constants;
+using MediaVoyager.Handlers;
 using MediaVoyager.Repositories;
 using MediaVoyager.Services;
 using MediaVoyager.Services.Interfaces;
@@ -24,6 +25,7 @@ builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationService>();
 builder.Services.AddSingleton<IUserMediaService, UserMediaService>();
+builder.Services.AddSingleton<ISignInHandler, SignInHandler>();
 
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();
