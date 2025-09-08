@@ -1,5 +1,6 @@
 ﻿using MediaVoyager.Constants;
 using MediaVoyager.Handlers;
+using MediaVoyager.Models;
 using Microsoft.AspNetCore.Mvc;
 using NewHorizonLib.Attributes;
 using NewHorizonLib.Services.Interfaces;
@@ -30,6 +31,23 @@ namespace MediaVoyager.Controllers
 
             string token = this.tokenService.GenerateToken(claims, GlobalConstant.Issuer, "MediaVoyagerClient", 2);
             return Ok(token);
+        }
+
+        [HttpPost("verify-otp")]
+        [RateLimit(3, 5)]
+        public IActionResult VerifyOtp(VerifyOtpRequest verifyOtpRequest)
+        {
+            string email = HttpContext.Request.Headers["x-uid"].ToString();
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email is required");
+            }
+            string authToken = this.signInHandler.VerifyOtpAndReturnAuthToken(email, verifyOtpRequest.Otp);
+            if (string.IsNullOrEmpty(authToken))
+            {
+                return BadRequest("Invalid OTP");
+            }
+            return Ok(authToken);
         }
 
         [HttpPost("send-otp")]

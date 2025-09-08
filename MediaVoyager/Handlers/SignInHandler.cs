@@ -1,4 +1,6 @@
-﻿using NewHorizonLib.Services.Interfaces;
+﻿using MediaVoyager.Constants;
+using NewHorizonLib.Services.Interfaces;
+using System.Security.Claims;
 
 namespace MediaVoyager.Handlers
 {
@@ -6,11 +8,13 @@ namespace MediaVoyager.Handlers
     {
         private readonly IEmailService _emailService;
         private readonly IOtpService _otpService;
+        private readonly ITokenService _tokenService;
 
-        public SignInHandler(IEmailService emailService, IOtpService otpService)
+        public SignInHandler(IEmailService emailService, IOtpService otpService, ITokenService tokenService)
         {
             _emailService = emailService;
             _otpService = otpService;
+            _tokenService = tokenService;
         }
 
         public async Task SendOtpEmail(string email)
@@ -18,6 +22,21 @@ namespace MediaVoyager.Handlers
             string otp = _otpService.GenerateOtp(email);
             string otpEmailBody = OtpEmailTemplate(otp);
             await _emailService.SendMail(email, otpEmailBody, "Your Media Voyager Verification Code", "MediaVoyager", "noreply@mediavoyager.in", true);
+        }
+
+        public string VerifyOtpAndReturnAuthToken(string email, string otp)
+        {
+            bool isValid = this._otpService.ValidateOtp(email, otp);
+            if (!isValid)
+            {
+                return string.Empty;
+            }
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, email)
+            };
+            string token = this._tokenService.GenerateToken(claims, GlobalConstant.Issuer, "MediaVoyagerClient", 2000);
+            return token;
         }
 
         private string OtpEmailTemplate(string otp)
