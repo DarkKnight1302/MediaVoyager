@@ -11,7 +11,6 @@ namespace MediaVoyager.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [RateLimit(2, 1)]
     public class SearchController : ControllerBase
     {
         private readonly TMDbClient tmdbClient;
@@ -24,6 +23,7 @@ namespace MediaVoyager.Controllers
 
         [Authorize]
         [HttpGet("movies")]
+        [RateLimit(100, 5)]
         public async Task<IActionResult> SearchMovies(string keyword)
         {
             if (string.IsNullOrEmpty(keyword) || keyword.Length < 2)
@@ -36,6 +36,23 @@ namespace MediaVoyager.Controllers
                 return NotFound();
             }
             return Ok(movies.Results);
+        }
+
+        [Authorize]
+        [HttpGet("tvShows")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> SearchTvShows(string keyword)
+        {
+            if (string.IsNullOrEmpty(keyword) || keyword.Length < 2)
+            {
+                return BadRequest();
+            }
+            SearchContainer<SearchTv> tvShows = await this.tmdbClient.SearchTvShowAsync(keyword);
+            if (tvShows.Results.Count == 0)
+            {
+                return NotFound();
+            }
+            return Ok(tvShows.Results);
         }
     }
 }
