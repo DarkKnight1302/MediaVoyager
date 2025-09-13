@@ -6,6 +6,8 @@
 
         public string Title { get; set; }
 
+        public DateTime? FirstAirDate { get; set; }
+
         public bool Equals(TvShow? other)
         {
             if (other == null)

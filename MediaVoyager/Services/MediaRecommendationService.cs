@@ -74,6 +74,11 @@ namespace MediaVoyager.Services
             return null;
         }
 
+        public Task<object> GetTvShowRecommendationForUser(string userId)
+        {
+            throw new NotImplementedException();
+        }
+
         private string ConvertToEasyName(Movie movie)
         {
             return $"{movie.Title} ({movie.ReleaseDate.Value.Year})";

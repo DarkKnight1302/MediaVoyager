@@ -26,6 +26,8 @@ builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationService>();
 builder.Services.AddSingleton<IUserMediaService, UserMediaService>();
 builder.Services.AddSingleton<ISignInHandler, SignInHandler>();
+builder.Services.AddSingleton<IUserTvRepository, UserTvRepository>();
+
 
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();

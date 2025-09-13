@@ -4,9 +4,6 @@ namespace MediaVoyager.ApiRequest
 {
     public class AddUserMovieRequest
     {
-        public string userId { get; set; }
-
-        public List<SearchMovie> favouriteMovies { get; set; }
-
+        public List<SearchMovie> movies { get; set; }
     }
 }
