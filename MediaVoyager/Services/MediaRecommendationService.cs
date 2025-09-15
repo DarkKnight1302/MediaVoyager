@@ -9,7 +9,9 @@ using TMDbLib.Objects.Find;
 using TMDbLib.Objects.General;
 using TMDbLib.Objects.Movies;
 using TMDbLib.Objects.Search;
+using TMDbLib.Objects.TvShows;
 using Movie = MediaVoyager.Models.Movie;
+using TvShow = MediaVoyager.Models.TvShow;
 
 namespace MediaVoyager.Services
 {
@@ -17,15 +19,18 @@ namespace MediaVoyager.Services
     {
         private readonly IUserMoviesRepository userMoviesRepository;
         private readonly IGeminiRecommendationClient geminiRecommendationClient;
+        private readonly IUserTvRepository userTvRepository;
         private readonly string tmdbApiKey;
 
         public MediaRecommendationService(ISecretService secretService,
             IUserMoviesRepository userMoviesRepository,
-            IGeminiRecommendationClient geminiRecommendationClient)
+            IGeminiRecommendationClient geminiRecommendationClient,
+            IUserTvRepository userTvRepository)
         {
             this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
             this.geminiRecommendationClient = geminiRecommendationClient;
+            this.userTvRepository = userTvRepository;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
@@ -74,14 +79,62 @@ namespace MediaVoyager.Services
             return null;
         }
 
-        public Task<object> GetTvShowRecommendationForUser(string userId)
+        public async Task<TvShowResponse> GetTvShowRecommendationForUser(string userId)
         {
-            throw new NotImplementedException();
+            TMDbClient tmdbClient = new TMDbClient(tmdbApiKey);
+            UserTv userTvShows = await this.userTvRepository.GetUserTv(userId).ConfigureAwait(false);
+            if (userTvShows == null)
+            {
+                return null;
+            }
+            List<string> favouriteTvShows = userTvShows.favouriteTv.Select(x => ConvertToEasyName(x)).ToList<string>();
+            List<string> watchHistory = userTvShows.watchHistory.Select(x => ConvertToEasyName(x)).ToList<string>();
+            string tvShow = await this.geminiRecommendationClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, 1);
+            if (string.IsNullOrEmpty(tvShow))
+            {
+                tvShow = await this.geminiRecommendationClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, 2);
+            }
+            if (string.IsNullOrEmpty(tvShow))
+            {
+                return null;
+            }
+            FindContainer findContainer = await tmdbClient.FindAsync(FindExternalSource.Imdb, tvShow).ConfigureAwait(false);
+
+            List<SearchTv> results = findContainer.TvResults;
+
+            if (results != null && results.Count > 0)
+            {
+                int tvShowId = results[0].Id;
+                TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await tmdbClient.GetTvShowAsync(tvShowId);
+                if (tvShowTmdb != null)
+                {
+                    TvShowResponse movieResponse = new TvShowResponse()
+                    {
+                        Id = tvShowId.ToString(),
+                        Genres = tvShowTmdb.Genres,
+                        Poster = tvShowTmdb.PosterPath,
+                        OriginCountry = tvShowTmdb.OriginCountry[0],
+                        OverView = tvShowTmdb.Overview,
+                        FirstAirDate = tvShowTmdb.FirstAirDate,
+                        TagLine = tvShowTmdb.Tagline,
+                        Title = tvShowTmdb.Name,
+                        OriginalName = tvShowTmdb.OriginalName,
+                        NumberOfSeasons = tvShowTmdb.NumberOfSeasons,
+                    };
+                    return movieResponse;
+                }
+            }
+            return null;
         }
 
         private string ConvertToEasyName(Movie movie)
         {
             return $"{movie.Title} ({movie.ReleaseDate.Value.Year})";
+        }
+
+        private string ConvertToEasyName(TvShow tvShow)
+        {
+            return $"{tvShow.Title} ({tvShow.FirstAirDate.Value.Year})";
         }
     }
 }

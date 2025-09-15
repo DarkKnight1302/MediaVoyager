@@ -7,11 +7,22 @@ namespace TMDbLib.Utilities.Converters
     /// <summary>
     /// In some cases, TMDb sends a list of integers as an object
     /// </summary>
-    internal class TmdbIntArrayAsObjectConverter : JsonConverter
+    public class TmdbIntArrayAsObjectConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
-            throw new NotSupportedException();
+            // We only support properties that are intended to hold a list of integers.
+            // Typical TMDb fields (e.g. genre_ids) are declared as List<int>.
+            if (objectType == typeof(List<int>))
+                return true;
+
+            if (objectType == typeof(IList<int>))
+                return true;
+
+            if (objectType == typeof(IEnumerable<int>))
+                return true;
+
+            return false;
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)

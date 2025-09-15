@@ -2,3 +2,6 @@
 
 # CAC001: ConfigureAwaitChecker
 dotnet_diagnostic.CAC001.severity = error
+
+# IDE0161: Convert to file-scoped namespace
+dotnet_diagnostic.IDE0161.severity = suggestion

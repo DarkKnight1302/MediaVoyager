@@ -1,9 +1,8 @@
 ﻿using TMDbLib.Objects.Search;
 
-namespace MediaVoyager.ApiRequest
+namespace MediaVoyager.ApiRequest;
+
+public class AddUserMovieRequest
 {
-    public class AddUserMovieRequest
-    {
-        public List<SearchMovie> movies { get; set; }
-    }
+    public List<SearchMovie> movies { get; set; }
 }

@@ -10,13 +10,31 @@ using NewHorizonLib.Services;
 using NewHorizonLib.Services.Interfaces;
 using System.Net;
 using TMDbLib.Utilities;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        // Configure property naming policy to handle underscores
+        options.SerializerSettings.ContractResolver = new DefaultContractResolver
+        {
+            NamingStrategy = new SnakeCaseNamingStrategy()
+        };
+        
+        // Add TMDbLib converters
+        options.SerializerSettings.Converters.Add(new TMDbLib.Utilities.Converters.TolerantEnumConverter());
+        
+        // Configure date handling if needed
+        options.SerializerSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
+        options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
+    });
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
@@ -27,7 +45,6 @@ builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationSe
 builder.Services.AddSingleton<IUserMediaService, UserMediaService>();
 builder.Services.AddSingleton<ISignInHandler, SignInHandler>();
 builder.Services.AddSingleton<IUserTvRepository, UserTvRepository>();
-
 
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();

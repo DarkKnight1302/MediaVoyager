@@ -6,6 +6,6 @@ namespace MediaVoyager.Services.Interfaces
     {
         public Task<MovieResponse> GetMovieRecommendationForUser(string userId);
 
-        public Task<object> GetTvShowRecommendationForUser(string userId);
+        public Task<TvShowResponse> GetTvShowRecommendationForUser(string userId);
     }
 }
