@@ -200,7 +200,7 @@
                 {
                     Parts = new List<Part>
                 {
-                    new Part { Text = "You're a tv show recommendation bot, you will recommend top rated tv show based on given favorites as reference and the recommended tv show should not be part of watch history. Your output should only be the IMDB ID of the tv show" }
+                    new Part { Text = "You're a tv show recommendation bot, you will recommend top rated tv show based on given favorites as reference and the recommended tv show should not be part of watch history. Your output should only be the TvDB ID of the tv show" }
                 }
                 },
                 Contents = new List<Content>

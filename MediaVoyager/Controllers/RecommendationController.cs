@@ -3,6 +3,7 @@ using MediaVoyager.Models;
 using MediaVoyager.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NewHorizonLib.Attributes;
 using NewHorizonLib.Services.Interfaces;
 
 namespace MediaVoyager.Controllers
@@ -25,10 +26,12 @@ namespace MediaVoyager.Controllers
             this.logger = logger;
         }
 
-        [HttpGet("favourite/movie")]
+        [HttpGet("movie")]
         [Authorize]
-        public async Task<IActionResult> GetMovieRecommendation(string userId)
+        [RateLimit(10, 720)]
+        public async Task<IActionResult> GetMovieRecommendation()
         {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
             bool isValidAuth = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
             
             if (!isValidAuth)
@@ -41,6 +44,26 @@ namespace MediaVoyager.Controllers
                 return NotFound();
             }
             return Ok(movieResponse);
+        }
+
+        [HttpGet("tvshow")]
+        [Authorize]
+        [RateLimit(10, 720)]
+        public async Task<IActionResult> GetTvShowRecommendation()
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+            bool isValidAuth = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValidAuth)
+            {
+                return Unauthorized();
+            }
+            TvShowResponse tvShowResponse = await this.mediaRecommendationService.GetTvShowRecommendationForUser(userId);
+            if (tvShowResponse == null)
+            {
+                return NotFound();
+            }
+            return Ok(tvShowResponse);
         }
     }
 }

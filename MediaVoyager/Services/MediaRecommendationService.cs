@@ -98,7 +98,7 @@ namespace MediaVoyager.Services
             {
                 return null;
             }
-            FindContainer findContainer = await tmdbClient.FindAsync(FindExternalSource.Imdb, tvShow).ConfigureAwait(false);
+            FindContainer findContainer = await tmdbClient.FindAsync(FindExternalSource.TvDb, tvShow).ConfigureAwait(false);
 
             List<SearchTv> results = findContainer.TvResults;
 
@@ -108,7 +108,7 @@ namespace MediaVoyager.Services
                 TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await tmdbClient.GetTvShowAsync(tvShowId);
                 if (tvShowTmdb != null)
                 {
-                    TvShowResponse movieResponse = new TvShowResponse()
+                    TvShowResponse tvShowResponse = new TvShowResponse()
                     {
                         Id = tvShowId.ToString(),
                         Genres = tvShowTmdb.Genres,
@@ -121,7 +121,7 @@ namespace MediaVoyager.Services
                         OriginalName = tvShowTmdb.OriginalName,
                         NumberOfSeasons = tvShowTmdb.NumberOfSeasons,
                     };
-                    return movieResponse;
+                    return tvShowResponse;
                 }
             }
             return null;
