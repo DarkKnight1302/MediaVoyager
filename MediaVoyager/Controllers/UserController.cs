@@ -108,5 +108,196 @@ namespace MediaVoyager.Controllers
             await this.userMediaService.AddTvShowsToWatchHistory(userId, addUserTvRequest.tvShows);
             return Ok();
         }
+
+        // Watchlist endpoints
+        [Authorize]
+        [HttpGet("watchlist")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> GetWatchlist()
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var watchlist = await this.userMediaService.GetUserWatchlist(userId);
+                return Ok(watchlist);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error retrieving watchlist: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpPost("movies/addToWatchlist")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> AddMoviesToWatchlist([FromBody] WatchlistMovieRequest request)
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            if (request?.movieIds == null || !request.movieIds.Any())
+            {
+                return BadRequest("Movie IDs are required");
+            }
+
+            try
+            {
+                await this.userMediaService.AddMoviesToWatchlist(userId, request.movieIds);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error adding movies to watchlist: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("movies/removeFromWatchlist")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> RemoveMoviesFromWatchlist([FromBody] WatchlistMovieRequest request)
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            if (request?.movieIds == null || !request.movieIds.Any())
+            {
+                return BadRequest("Movie IDs are required");
+            }
+
+            try
+            {
+                await this.userMediaService.RemoveMoviesFromWatchlist(userId, request.movieIds);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error removing movies from watchlist: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpPost("tv/addToWatchlist")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> AddTvShowsToWatchlist([FromBody] WatchlistTvRequest request)
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            if (request?.tvIds == null || !request.tvIds.Any())
+            {
+                return BadRequest("TV show IDs are required");
+            }
+
+            try
+            {
+                await this.userMediaService.AddTvShowsToWatchlist(userId, request.tvIds);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error adding TV shows to watchlist: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("tv/removeFromWatchlist")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> RemoveTvShowsFromWatchlist([FromBody] WatchlistTvRequest request)
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            if (request?.tvIds == null || !request.tvIds.Any())
+            {
+                return BadRequest("TV show IDs are required");
+            }
+
+            try
+            {
+                await this.userMediaService.RemoveTvShowsFromWatchlist(userId, request.tvIds);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error removing TV shows from watchlist: {ex.Message}");
+            }
+        }
     }
 }

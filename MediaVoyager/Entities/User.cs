@@ -17,5 +17,10 @@
         public DateTimeOffset createdAt { get; set; }
 
         public DateTimeOffset updatedAt { get; set; }
+
+        // Watchlist properties
+        public HashSet<string> movieWatchlist { get; set; } = new HashSet<string>();
+
+        public HashSet<string> tvWatchlist { get; set; } = new HashSet<string>();
     }
 }

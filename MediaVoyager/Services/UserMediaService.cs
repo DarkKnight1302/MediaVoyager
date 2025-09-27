@@ -3,6 +3,8 @@ using MediaVoyager.Models;
 using MediaVoyager.Repositories;
 using MediaVoyager.Services.Interfaces;
 using TMDbLib.Objects.Search;
+using TMDbLib.Client;
+using NewHorizonLib.Services;
 
 namespace MediaVoyager.Services
 {
@@ -10,11 +12,20 @@ namespace MediaVoyager.Services
     {
         private readonly IUserMoviesRepository userMoviesRepository;
         private readonly IUserTvRepository userTvRepository;
+        private readonly IUserRepository userRepository;
+        private readonly TMDbClient tmdbClient;
 
-        public UserMediaService(IUserMoviesRepository userMoviesRepository, IUserTvRepository userTvRepository)
+        public UserMediaService(IUserMoviesRepository userMoviesRepository, 
+                               IUserTvRepository userTvRepository,
+                               IUserRepository userRepository,
+                               ISecretService secretService)
         {
             this.userMoviesRepository = userMoviesRepository;
             this.userTvRepository = userTvRepository;
+            this.userRepository = userRepository;
+            
+            string tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
+            this.tmdbClient = new TMDbClient(tmdbApiKey);
         }
 
         public async Task AddMoviesToFavourites(string userId, List<SearchMovie> movies)
@@ -69,6 +80,100 @@ namespace MediaVoyager.Services
             }
             userTv.watchHistory.AddRange(watchHistoryTvShows.Where(tv => !userTv.watchHistory.Contains(tv)));
             await this.userTvRepository.UpsertUserTv(userTv);
+        }
+
+        // Watchlist methods
+        public async Task AddMoviesToWatchlist(string userId, List<string> movieIds)
+        {
+            await this.userRepository.AddMoviesToWatchlist(userId, movieIds);
+        }
+
+        public async Task RemoveMoviesFromWatchlist(string userId, List<string> movieIds)
+        {
+            await this.userRepository.RemoveMoviesFromWatchlist(userId, movieIds);
+        }
+
+        public async Task AddTvShowsToWatchlist(string userId, List<string> tvIds)
+        {
+            await this.userRepository.AddTvShowsToWatchlist(userId, tvIds);
+        }
+
+        public async Task RemoveTvShowsFromWatchlist(string userId, List<string> tvIds)
+        {
+            await this.userRepository.RemoveTvShowsFromWatchlist(userId, tvIds);
+        }
+
+        public async Task<WatchlistResponse> GetUserWatchlist(string userId)
+        {
+            var user = await this.userRepository.GetUser(userId);
+            if (user == null)
+            {
+                throw new ArgumentException($"User with id {userId} not found");
+            }
+
+            var response = new WatchlistResponse();
+
+            // Fetch movies from TMDb
+            if (user.movieWatchlist?.Any() == true)
+            {
+                var movieTasks = user.movieWatchlist.Select(async movieId =>
+                {
+                    try
+                    {
+                        var movie = await this.tmdbClient.GetMovieAsync(int.Parse(movieId));
+                        if (movie != null)
+                        {
+                            return new Movie
+                            {
+                                Id = movie.Id.ToString(),
+                                Title = movie.Title,
+                                ReleaseDate = movie.ReleaseDate
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error and continue
+                        Console.WriteLine($"Error fetching movie {movieId}: {ex.Message}");
+                    }
+                    return null;
+                });
+
+                var movies = await Task.WhenAll(movieTasks);
+                response.movies = movies.Where(m => m != null).ToList();
+            }
+
+            // Fetch TV shows from TMDb
+            if (user.tvWatchlist?.Any() == true)
+            {
+                var tvTasks = user.tvWatchlist.Select(async tvId =>
+                {
+                    try
+                    {
+                        var tvShow = await this.tmdbClient.GetTvShowAsync(int.Parse(tvId));
+                        if (tvShow != null)
+                        {
+                            return new TvShow
+                            {
+                                Id = tvShow.Id.ToString(),
+                                Title = tvShow.Name,
+                                FirstAirDate = tvShow.FirstAirDate
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error and continue
+                        Console.WriteLine($"Error fetching TV show {tvId}: {ex.Message}");
+                    }
+                    return null;
+                });
+
+                var tvShows = await Task.WhenAll(tvTasks);
+                response.tvShows = tvShows.Where(tv => tv != null).ToList();
+            }
+
+            return response;
         }
 
         private List<Movie> ConvertToMovieObject(List<SearchMovie> movies)
