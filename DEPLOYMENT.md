@@ -80,14 +80,56 @@ The solution is specifically optimized for Azure Container Apps:
 - Handles secrets and configuration appropriately
 - Supports graceful shutdown for container orchestration
 
+## Multi-Project Structure Support
+
+### Problem Addressed
+The original deployment failed because buildpacks were confused about which project to build in the multi-project solution:
+- **MediaVoyager** - Main ASP.NET Core web application
+- **TMDbLib** - External library project (project reference)
+- **NewHorizonLib** - Shared library dependency (NuGet package)
+
+### Solution Implemented
+Added explicit buildpack configuration files to guide the build process:
+
+1. **`.deployment` file**: Specifies the main project path for buildpacks
+2. **`project.toml` file**: Provides explicit buildpack configuration with environment variables
+3. **Updated GitHub Actions workflow**: Points to solution root instead of project directory
+4. **`.buildpacks` file**: Specifies the preferred builder
+
+### Configuration Files Added
+
+**.deployment**
+```
+[config]
+project = MediaVoyager/MediaVoyager.csproj
+```
+
+**project.toml**
+```toml
+[build]
+include = [
+  "MediaVoyager/",
+  "TMDbLib/", 
+  "MediaVoyager.sln",
+  ".deployment"
+]
+
+[[build.buildpacks]]
+uri = "paketo-buildpacks/dotnet-core"
+
+[[build.env]]
+name = "BP_DOTNET_PROJECT_PATH"
+value = "MediaVoyager/MediaVoyager.csproj"
+```
+
 ## Testing the Solution
 
 To test locally with .NET:
 ```bash
-cd MediaVoyager
+# From solution root
 dotnet restore
 dotnet build
-dotnet run
+dotnet publish MediaVoyager/MediaVoyager.csproj -o ./publish
 ```
 
 The application will be available at `http://localhost:5000` (or configured port) with health checks at `/health`.
@@ -95,20 +137,20 @@ The application will be available at `http://localhost:5000` (or configured port
 ## Next Steps
 
 1. **Deploy to Azure Container Apps using the updated GitHub Actions workflow**
-   - Workflow now uses source-based deployment without ACR
-   - No container registry setup required
-   - Buildpacks handle all build and containerization automatically
+   - Workflow now uses solution root as `appSourcePath`
+   - Buildpack configuration files guide the build process
+   - Multi-project dependencies are resolved correctly
 2. Monitor container health and performance
 3. Verify all application functionality works in the containerized environment
 4. Review logs for any container-specific issues
 
 ## Buildpack Approach
 
-This solution follows the same approach as TrafficEscape2.0, which successfully deploys without ACR:
+This solution enhances the TrafficEscape2.0 approach to handle multi-project scenarios:
 - No Dockerfile required
 - Azure Container Apps buildpacks handle .NET application detection
-- Automatic build and containerization
-- No external registry dependencies
+- **Multi-project support** via configuration files
+- Automatic dependency resolution (project references + NuGet packages)
 - Simplified GitHub Actions workflow
 
-This approach eliminates the Microsoft.ContainerRegistry namespace registration requirement and provides a more maintainable deployment solution.
+This approach eliminates both the Microsoft.ContainerRegistry namespace registration requirement and multi-project buildpack confusion.

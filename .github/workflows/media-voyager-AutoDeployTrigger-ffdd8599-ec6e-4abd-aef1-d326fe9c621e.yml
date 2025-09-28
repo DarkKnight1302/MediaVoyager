@@ -34,7 +34,7 @@ jobs:
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: './MediaVoyager'  # Point to main project, not solution root
+          appSourcePath: '.'  # Point to solution root, let .deployment file guide buildpack
           containerAppName: media-voyager
           resourceGroup: ContainerAppResourceGrp
 
