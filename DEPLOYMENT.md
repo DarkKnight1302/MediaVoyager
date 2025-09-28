@@ -45,6 +45,11 @@ The original issue was:
 - Replaced buildpack deployment with Docker container deployment
 - Added `dockerfilePath: Dockerfile` parameter
 - Updated to use `actions/checkout@v4`
+- **NEW: Automatic Azure Container Registry (ACR) Management**:
+  - Creates ACR if it doesn't exist (`mediavoyageracr[owner][timestamp]`)
+  - Configures ACR with Basic SKU and admin access enabled
+  - Automatically retrieves and uses ACR credentials
+  - Uses properly formatted image names for registry
 - Removed buildpack-specific parameters
 
 ## Key Benefits
@@ -110,9 +115,22 @@ The application will be available at `http://localhost:8080` with health checks 
 
 ## Next Steps
 
-1. Deploy to Azure Container Apps using the updated GitHub Actions workflow
+1. **Deploy to Azure Container Apps using the updated GitHub Actions workflow**
+   - Workflow now automatically creates and configures Azure Container Registry (ACR)
+   - No manual ACR setup required - the workflow handles all registry configuration
+   - Uses dynamic ACR naming to avoid conflicts between different deployments
 2. Monitor container health and performance
 3. Verify all application functionality works in the containerized environment
 4. Review logs for any container-specific issues
 
-This solution provides a robust, maintainable approach to deploying the MediaVoyager application on Azure Container Apps while eliminating the buildpack-related deployment failures.
+## Azure Container Registry (ACR) Management
+
+The updated workflow automatically:
+- Creates a uniquely named ACR (format: `mediavoyageracr[owner][timestamp]`) if one doesn't exist
+- Configures the ACR with Basic SKU and admin access enabled
+- Retrieves ACR credentials dynamically
+- Uses the ACR for container image storage and deployment
+
+This eliminates the previous error where the workflow tried to use a non-existent ACR (`ca077d173b47acr`).
+
+This solution provides a robust, maintainable approach to deploying the MediaVoyager application on Azure Container Apps while eliminating both the buildpack-related deployment failures and ACR configuration issues.
