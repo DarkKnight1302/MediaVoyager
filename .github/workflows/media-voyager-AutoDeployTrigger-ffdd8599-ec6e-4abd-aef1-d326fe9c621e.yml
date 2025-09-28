@@ -31,16 +31,42 @@ jobs:
           tenant-id: ${{ secrets.MEDIAVOYAGER_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.MEDIAVOYAGER_AZURE_SUBSCRIPTION_ID }}
 
+      - name: Create or get Azure Container Registry
+        run: |
+          ACR_NAME="mediavoyageracr$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')$(date +%s | tail -c 5)"
+          echo "ACR_NAME=$ACR_NAME" >> $GITHUB_ENV
+          
+          # Check if ACR exists, if not create it
+          if ! az acr show --name $ACR_NAME --resource-group ContainerAppResourceGrp 2>/dev/null; then
+            echo "Creating Azure Container Registry: $ACR_NAME"
+            az acr create \
+              --name $ACR_NAME \
+              --resource-group ContainerAppResourceGrp \
+              --sku Basic \
+              --admin-enabled true
+          else
+            echo "ACR $ACR_NAME already exists"
+          fi
+          
+          # Get ACR login server and credentials
+          ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group ContainerAppResourceGrp --query loginServer --output tsv)
+          ACR_USERNAME=$(az acr credential show --name $ACR_NAME --resource-group ContainerAppResourceGrp --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --resource-group ContainerAppResourceGrp --query passwords[0].value --output tsv)
+          
+          echo "ACR_LOGIN_SERVER=$ACR_LOGIN_SERVER" >> $GITHUB_ENV
+          echo "ACR_USERNAME=$ACR_USERNAME" >> $GITHUB_ENV
+          echo "ACR_PASSWORD=$ACR_PASSWORD" >> $GITHUB_ENV
+
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
           dockerfilePath: Dockerfile
-          registryUrl: 
-          registryUsername: ${{ secrets.MEDIAVOYAGER_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.MEDIAVOYAGER_REGISTRY_PASSWORD }}
+          registryUrl: ${{ env.ACR_LOGIN_SERVER }}
+          registryUsername: ${{ env.ACR_USERNAME }}
+          registryPassword: ${{ env.ACR_PASSWORD }}
           containerAppName: media-voyager
           resourceGroup: ContainerAppResourceGrp
-          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
+          imageToBuild: ${{ env.ACR_LOGIN_SERVER }}/media-voyager:${{ github.sha }}
 
 
