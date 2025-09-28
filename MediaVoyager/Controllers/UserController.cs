@@ -27,7 +27,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> AddFavouriteMovies([FromBody] AddUserMovieRequest addUserMovieRequest)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -49,7 +49,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> AddMoviesToWatchHistory([FromBody] AddUserMovieRequest addUserMovieRequest)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -71,7 +71,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> AddFavouriteTvShows([FromBody] AddUserTvRequest addUserTvRequest)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -93,7 +93,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> AddTvShowsToWatchHistory([FromBody] AddUserTvRequest addUserTvRequest)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -116,7 +116,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> GetWatchlist()
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -150,7 +150,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> AddMoviesToWatchlist([FromBody] WatchlistMovieRequest request)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -189,7 +189,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> RemoveMoviesFromWatchlist([FromBody] WatchlistMovieRequest request)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -228,7 +228,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> AddTvShowsToWatchlist([FromBody] WatchlistTvRequest request)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
@@ -267,7 +267,7 @@ namespace MediaVoyager.Controllers
         public async Task<IActionResult> RemoveTvShowsFromWatchlist([FromBody] WatchlistTvRequest request)
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest("User ID header is required");
