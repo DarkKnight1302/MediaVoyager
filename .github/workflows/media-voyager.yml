@@ -26,8 +26,8 @@ jobs:
         uses: azure/docker-login@v2
         with:
           login-server: ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}
-          username: ${{ secrets.MediaVoyager20250928174500_USERNAME_40B3 }}
-          password: ${{ secrets.MediaVoyager20250928174500_PASSWORD_40B3 }}
+          username: ${{ secrets.MEDIAVOYAGER20250928174500_USERNAME_40B3 }}
+          password: ${{ secrets.MEDIAVOYAGER20250928174500_PASSWORD_40B3 }}
       - name: Build and push container image to registry
         run: |
           dotnet publish -c Release -r linux-x64 \
@@ -49,7 +49,10 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.media_voyager_SPN }}
+          client-id: ${{ secrets.MEDIAVOYAGER_AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.MEDIAVOYAGER_AZURE_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.MEDIAVOYAGER_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.MEDIAVOYAGER_AZURE_SUBSCRIPTION_ID }}
       - name: Deploy to containerapp
         uses: azure/CLI@v2
         with:
@@ -60,8 +63,8 @@ jobs:
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.CONTAINER_APP_RESOURCE_GROUP_NAME }} \
               --server ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }} \
-              --username ${{ secrets.MediaVoyager20250928174500_USERNAME_40B3 }} \
-              --password ${{ secrets.MediaVoyager20250928174500_PASSWORD_40B3 }}
+              --username ${{ secrets.MEDIAVOYAGER20250928174500_USERNAME_40B3 }} \
+              --password ${{ secrets.MEDIAVOYAGER20250928174500_PASSWORD_40B3 }}
 
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
