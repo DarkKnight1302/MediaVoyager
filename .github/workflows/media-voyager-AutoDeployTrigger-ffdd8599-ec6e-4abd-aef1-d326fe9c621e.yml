@@ -31,11 +31,12 @@ jobs:
           tenant-id: ${{ secrets.MEDIAVOYAGER_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.MEDIAVOYAGER_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and deploy container app using source
+      - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}
+          appSourcePath: './MediaVoyager'  # Point to main project, not solution root
           containerAppName: media-voyager
           resourceGroup: ContainerAppResourceGrp
+
 
 
