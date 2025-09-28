@@ -1,0 +1,30 @@
+[project]
+id = "MediaVoyager"
+name = "MediaVoyager"
+version = "1.0.0"
+
+[[project.licenses]]
+type = "MIT"
+
+[build]
+include = [
+  "MediaVoyager/",
+  "TMDbLib/",
+  "MediaVoyager.sln",
+  ".deployment"
+]
+
+[[build.buildpacks]]
+uri = "paketo-buildpacks/dotnet-core"
+
+[[build.env]]
+name = "BP_DOTNET_PROJECT_PATH"
+value = "MediaVoyager/MediaVoyager.csproj"
+
+[[build.env]]
+name = "BP_DOTNET_FRAMEWORK"
+value = "net9.0"
+
+[[build.env]]
+name = "ASPNETCORE_URLS"
+value = "http://+:8080"
