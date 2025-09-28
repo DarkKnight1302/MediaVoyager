@@ -38,6 +38,7 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
+builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<IGeminiRecommendationClient, GeminiRecommendationClient>();
 builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
@@ -67,5 +68,6 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
