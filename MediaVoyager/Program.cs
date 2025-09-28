@@ -15,6 +15,11 @@ using Newtonsoft.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure logging for containers
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 
@@ -39,6 +44,12 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 builder.Services.AddHealthChecks();
+
+// Configure host options for containers
+builder.Host.ConfigureHostOptions(options =>
+{
+    options.ShutdownTimeout = TimeSpan.FromSeconds(30);
+});
 builder.Services.AddSingleton<IGeminiRecommendationClient, GeminiRecommendationClient>();
 builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
@@ -53,8 +64,12 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 app.UseRateLimiting();
-string tmdbAuth = app.Services.GetService<ISecretService>().GetSecretValue("tmdb_auth");
-SecretUtility.tmdbAuthHeader = tmdbAuth;
+var secretService = app.Services.GetService<ISecretService>();
+if (secretService != null)
+{
+    string tmdbAuth = secretService.GetSecretValue("tmdb_auth");
+    SecretUtility.tmdbAuthHeader = tmdbAuth;
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -65,7 +80,12 @@ if (app.Environment.IsDevelopment())
 }
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseHttpsRedirection();
+
+// Only use HTTPS redirection in Development or when not in a container
+if (app.Environment.IsDevelopment() || !app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 app.MapControllers();
 app.MapHealthChecks("/health");
