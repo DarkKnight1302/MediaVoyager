@@ -35,14 +35,14 @@ namespace MediaVoyager.Controllers
 
         [HttpPost("verify-otp")]
         [RateLimit(3, 5)]
-        public IActionResult VerifyOtp(VerifyOtpRequest verifyOtpRequest)
+        public async Task<IActionResult> VerifyOtp(VerifyOtpRequest verifyOtpRequest)
         {
             string email = HttpContext.Request.Headers["x-uid"].ToString();
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("Email is required");
             }
-            string authToken = this.signInHandler.VerifyOtpAndReturnAuthToken(email, verifyOtpRequest.Otp);
+            string authToken = await this.signInHandler.VerifyOtpAndReturnAuthToken(email, verifyOtpRequest.Otp);
             if (string.IsNullOrEmpty(authToken))
             {
                 return BadRequest("Invalid OTP");

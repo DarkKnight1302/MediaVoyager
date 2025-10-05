@@ -1,4 +1,5 @@
 ﻿using MediaVoyager.Constants;
+using MediaVoyager.Repositories;
 using NewHorizonLib.Services.Interfaces;
 using System.Security.Claims;
 
@@ -9,12 +10,14 @@ namespace MediaVoyager.Handlers
         private readonly IEmailService _emailService;
         private readonly IOtpService _otpService;
         private readonly ITokenService _tokenService;
+        private readonly IUserRepository _userRepository;
 
-        public SignInHandler(IEmailService emailService, IOtpService otpService, ITokenService tokenService)
+        public SignInHandler(IEmailService emailService, IOtpService otpService, ITokenService tokenService, IUserRepository userRepository)
         {
             _emailService = emailService;
             _otpService = otpService;
             _tokenService = tokenService;
+            this._userRepository = userRepository;
         }
 
         public async Task SendOtpEmail(string email)
@@ -24,7 +27,7 @@ namespace MediaVoyager.Handlers
             await _emailService.SendMail(email, otpEmailBody, "Your Media Voyager Verification Code", "MediaVoyager", "noreply@mediavoyager.in", true);
         }
 
-        public string VerifyOtpAndReturnAuthToken(string email, string otp)
+        public async Task<string> VerifyOtpAndReturnAuthToken(string email, string otp)
         {
             bool isValid = this._otpService.ValidateOtp(email, otp);
             if (!isValid)
@@ -36,6 +39,11 @@ namespace MediaVoyager.Handlers
                 new Claim(ClaimTypes.NameIdentifier, email)
             };
             string token = this._tokenService.GenerateToken(claims, GlobalConstant.Issuer, "MediaVoyagerClient", 2000);
+            var user = await this._userRepository.GetUser(email).ConfigureAwait(false);
+            if (user == null)
+            {
+                await this._userRepository.CreateUser(email, email, false, email).ConfigureAwait(false);
+            }
             return token;
         }
 

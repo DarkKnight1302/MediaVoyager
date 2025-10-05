@@ -28,7 +28,7 @@ namespace MediaVoyager.Repositories
             return resp.Resource;
         }
 
-        public async Task<Entities.User> CreateUser(string id, string name, bool isGoogleLogin, string email, string passwordHash)
+        public async Task<Entities.User> CreateUser(string id, string name, bool isGoogleLogin, string email)
         {
             var container = GetContainer();
             Entities.User user = new Entities.User()
@@ -36,7 +36,6 @@ namespace MediaVoyager.Repositories
                 id = id,
                 name = name,
                 email = email,
-                passwordHash = passwordHash,
                 googleLogin = isGoogleLogin,
                 updatedAt = DateTimeOffset.UtcNow,
                 createdAt = DateTimeOffset.UtcNow,
