@@ -4,6 +4,6 @@
     {
         public Task SendOtpEmail(string email);
 
-        public Task<string> VerifyOtpAndReturnAuthToken(string email, string otp);
+        public Task<(string, bool)> VerifyOtpAndReturnAuthToken(string email, string otp);
     }
 }

@@ -11,13 +11,22 @@ namespace MediaVoyager.Handlers
         private readonly IOtpService _otpService;
         private readonly ITokenService _tokenService;
         private readonly IUserRepository _userRepository;
+        private readonly IUserMoviesRepository _userMoviesRepository;
+        private readonly IUserTvRepository _userTvRepository;
 
-        public SignInHandler(IEmailService emailService, IOtpService otpService, ITokenService tokenService, IUserRepository userRepository)
+        public SignInHandler(IEmailService emailService,
+            IOtpService otpService,
+            ITokenService tokenService,
+            IUserRepository userRepository,
+            IUserMoviesRepository userMoviesRepository,
+            IUserTvRepository userTvRepository)
         {
             _emailService = emailService;
             _otpService = otpService;
             _tokenService = tokenService;
             this._userRepository = userRepository;
+            this._userMoviesRepository = userMoviesRepository;
+            this._userTvRepository = userTvRepository;
         }
 
         public async Task SendOtpEmail(string email)
@@ -27,12 +36,12 @@ namespace MediaVoyager.Handlers
             await _emailService.SendMail(email, otpEmailBody, "Your Media Voyager Verification Code", "MediaVoyager", "noreply@mediavoyager.in", true);
         }
 
-        public async Task<string> VerifyOtpAndReturnAuthToken(string email, string otp)
+        public async Task<(string, bool)> VerifyOtpAndReturnAuthToken(string email, string otp)
         {
             bool isValid = this._otpService.ValidateOtp(email, otp);
             if (!isValid)
             {
-                return string.Empty;
+                return (string.Empty, true);
             }
             var claims = new[]
             {
@@ -44,7 +53,11 @@ namespace MediaVoyager.Handlers
             {
                 await this._userRepository.CreateUser(email, email, false, email).ConfigureAwait(false);
             }
-            return token;
+            var movies = await this._userMoviesRepository.GetUserMovies(email).ConfigureAwait(false);
+            var tvShows = await this._userTvRepository.GetUserTv(email).ConfigureAwait(false);
+            bool setupRequired = movies == null || tvShows == null || movies.favouriteMovies.Count == 0 || tvShows.favouriteTv.Count == 0;
+            
+            return (token, setupRequired);
         }
 
         private string OtpEmailTemplate(string otp)

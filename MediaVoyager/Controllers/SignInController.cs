@@ -34,7 +34,7 @@ namespace MediaVoyager.Controllers
         }
 
         [HttpPost("verify-otp")]
-        [RateLimit(3, 5)]
+        [RateLimit(6, 1)]
         public async Task<IActionResult> VerifyOtp(VerifyOtpRequest verifyOtpRequest)
         {
             string email = HttpContext.Request.Headers["x-uid"].ToString();
@@ -42,12 +42,17 @@ namespace MediaVoyager.Controllers
             {
                 return BadRequest("Email is required");
             }
-            string authToken = await this.signInHandler.VerifyOtpAndReturnAuthToken(email, verifyOtpRequest.Otp);
+            (string authToken, bool setupRequired) = await this.signInHandler.VerifyOtpAndReturnAuthToken(email, verifyOtpRequest.Otp);
             if (string.IsNullOrEmpty(authToken))
             {
                 return BadRequest("Invalid OTP");
             }
-            return Ok(authToken);
+            SignInResponse signInResponse = new SignInResponse
+            {
+                AuthToken = authToken,
+                SetupRequired = setupRequired
+            };
+            return Ok(signInResponse);
         }
 
         [HttpPost("send-otp")]
