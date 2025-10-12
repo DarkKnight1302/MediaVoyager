@@ -23,9 +23,9 @@ namespace TMDbLib.Objects.Search
         public string PosterPath { get; set; }
 
         [JsonProperty("vote_average")]
-        public double VoteAverage { get; set; }
+        public double? VoteAverage { get; set; }
 
         [JsonProperty("vote_count")]
-        public int VoteCount { get; set; }
+        public int? VoteCount { get; set; }
     }
 }

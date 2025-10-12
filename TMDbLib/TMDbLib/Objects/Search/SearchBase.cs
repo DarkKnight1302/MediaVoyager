@@ -12,6 +12,6 @@ namespace TMDbLib.Objects.Search
         public MediaType MediaType { get; set; }
 
         [JsonProperty("popularity")]
-        public double Popularity { get; set; }
+        public double? Popularity { get; set; }
     }
 }

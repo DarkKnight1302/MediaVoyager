@@ -12,7 +12,7 @@ namespace TMDbLib.Objects.Search
         }
 
         [JsonProperty("adult")]
-        public bool Adult { get; set; }
+        public bool? Adult { get; set; }
 
         [JsonProperty("original_title")]
         public string OriginalTitle { get; set; }
@@ -24,6 +24,6 @@ namespace TMDbLib.Objects.Search
         public string Title { get; set; }
 
         [JsonProperty("video")]
-        public bool Video { get; set; }
+        public bool? Video { get; set; }
     }
 }
