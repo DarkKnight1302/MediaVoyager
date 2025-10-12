@@ -8,6 +8,10 @@
 
         public DateTime? FirstAirDate { get; set; }
 
+        public string Poster { get; set; }
+
+        public string Overview { get; set; }
+
         public bool Equals(TvShow? other)
         {
             if (other == null)

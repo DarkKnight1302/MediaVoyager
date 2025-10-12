@@ -127,7 +127,9 @@ namespace MediaVoyager.Services
                             {
                                 Id = movie.Id.ToString(),
                                 Title = movie.Title,
-                                ReleaseDate = movie.ReleaseDate
+                                ReleaseDate = movie.ReleaseDate,
+                                Poster = movie.PosterPath,
+                                Overview = movie.Overview
                             };
                         }
                     }
@@ -157,7 +159,9 @@ namespace MediaVoyager.Services
                             {
                                 Id = tvShow.Id.ToString(),
                                 Title = tvShow.Name,
-                                FirstAirDate = tvShow.FirstAirDate
+                                FirstAirDate = tvShow.FirstAirDate,
+                                Poster = tvShow.PosterPath,
+                                Overview = tvShow.Overview
                             };
                         }
                     }
