@@ -98,9 +98,13 @@ namespace MediaVoyager.Services
             {
                 return null;
             }
-            FindContainer findContainer = await tmdbClient.FindAsync(FindExternalSource.TvDb, tvShow).ConfigureAwait(false);
+            string[] tvShowParts = tvShow.Split('\n');
+            string name = tvShowParts[0];
+            int year = int.Parse(tvShowParts[1]);
 
-            List<SearchTv> results = findContainer.TvResults;
+            SearchContainer<SearchTv> searchContainer = await tmdbClient.SearchTvShowAsync(name, 0, true, year).ConfigureAwait(false);
+
+            List<SearchTv> results = searchContainer.Results;
 
             if (results != null && results.Count > 0)
             {
