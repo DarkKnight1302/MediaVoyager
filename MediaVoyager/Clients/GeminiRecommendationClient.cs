@@ -168,7 +168,7 @@
                 {
                     Parts = new List<Part>
                 {
-                    new Part { Text = "You're a movie recommendation bot, you will recommend good movie based on given favorites as reference and the recommended movie should not be part of watch history. Your output should only be the IMDB ID of the movie" }
+                    new Part { Text = "You're a movie recommendation bot, you will recommend good movie based on given favorites as reference and the recommended movie should not be part of watch history. Your output should only be the `name of the movie` and `release year` in next line and only recommend one movie. Example response : <Movie name>\n<Release year>" }
                 }
                 },
                 Contents = new List<Content>
@@ -200,7 +200,7 @@
                 {
                     Parts = new List<Part>
                 {
-                    new Part { Text = "You're a tv show recommendation bot, you will recommend a tv show based on given favourites as reference and the recommended tv show should not be part of watch history, Your output should only be the `name of the show` and `first air year` in next line and only recommend one show" }
+                    new Part { Text = "You're a tv show recommendation bot, you will recommend a tv show based on given favourites as reference and the recommended tv show should not be part of watch history, Your output should only be the `name of the show` and `first air year` in next line and only recommend one show. Example response : <Tv show name>\n<First air year>" }
                 }
                 },
                 Contents = new List<Content>

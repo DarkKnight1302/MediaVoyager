@@ -55,9 +55,12 @@ namespace MediaVoyager.Services
             {
                 return null;
             }
-            FindContainer findContainer = await tmdbClient.FindAsync(FindExternalSource.Imdb, movie).ConfigureAwait(false);
+            string[] movieParts = movie.Split('\n');
+            string name = movieParts[0];
+            int year = int.Parse(movieParts[1]);
+            SearchContainer<SearchMovie> searchContainer = await tmdbClient.SearchMovieAsync(name, 0, true, year).ConfigureAwait(false);
 
-            List<SearchMovie> results = findContainer.MovieResults;
+            List<SearchMovie> results = searchContainer.Results;
 
             if (results!= null && results.Count > 0)
             {
