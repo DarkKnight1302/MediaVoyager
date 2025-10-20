@@ -19,6 +19,7 @@ namespace TMDbLib.Rest;
 
 internal class RestRequest
 {
+    private static readonly TraceSource Log = new TraceSource("TMDbLib.RestRequest", SourceLevels.All);
     private readonly RestClient _client;
     private readonly string _endpoint;
 
@@ -73,6 +74,30 @@ internal class RestRequest
         _urlSegment.Add(new KeyValuePair<string, string>(key, value));
 
         return this;
+    }
+
+    private static string RedactApiKey(string url)
+    {
+        if (string.IsNullOrEmpty(url))
+            return url;
+
+        try
+        {
+            int idx = url.IndexOf("api_key=", StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+                return url;
+
+            int start = idx + "api_key=".Length;
+            int end = url.IndexOf('&', start);
+            if (end < 0)
+                end = url.Length;
+
+            return url.Substring(0, start) + "****" + url.Substring(end);
+        }
+        catch
+        {
+            return url;
+        }
     }
 
     private void AppendQueryString(StringBuilder sb, string key, string value)
@@ -180,7 +205,9 @@ internal class RestRequest
         // Account for the following settings:
         // - MaxRetryCount                          Max times to retry
 
-        int timesToTry = 3;
+        int timesToTry = 10;
+        int attempt = 0;
+        int initialAttempts = timesToTry;
 
         TMDbStatusMessage statusMessage = null;
 
@@ -188,7 +215,15 @@ internal class RestRequest
 
         do
         {
+            attempt++;
+            Stopwatch sw = Stopwatch.StartNew();
             HttpRequestMessage req = PrepRequest(method);
+            try
+            {
+                Log.TraceEvent(TraceEventType.Information, 0,
+                    $"[TMDb] Attempt {attempt}/{initialAttempts + 1}: Preparing request {method} {RedactApiKey(req.RequestUri?.ToString())} | Endpoint: {_endpoint}");
+            }
+            catch { /* logging should never throw */ }
             //var handler = new HttpClientHandler
             //{
             //    // Force only TLS 1.2 (or add Tls13 if supported by your server & runtime)
@@ -220,15 +255,27 @@ internal class RestRequest
                     };
                 }
             };
+            try
+            {
+                Log.TraceEvent(TraceEventType.Information, 0,
+                    $"[TMDb] Attempt {attempt}: Using RestClientOptions BaseUrl={RedactApiKey(options.BaseUrl?.ToString() ?? apiUrl)} | TLS={SslProtocols.Tls12 | SslProtocols.Tls13}");
+            }
+            catch { }
             IRestClient client = new RestSharp.RestClient(options);
             var request = new RestSharp.RestRequest("");
             request.AddHeader("accept", "application/json");
             RestSharp.RestResponse resp = null;
             try
             {
+                Log.TraceEvent(TraceEventType.Information, 0,
+                    $"[TMDb] Attempt {attempt}: Sending request GET {RedactApiKey(options.BaseUrl?.ToString() ?? apiUrl)}");
                 resp = await client.GetAsync(request);
+                Log.TraceEvent(TraceEventType.Information, 0,
+                    $"[TMDb] Attempt {attempt}: Response received StatusCode={(int)resp.StatusCode} {resp.StatusCode} | ContentType={resp.ContentType ?? "<null>"} | Success={resp.IsSuccessStatusCode} | ContentLength={(resp.Content ?? string.Empty).Length}");
             } catch (HttpRequestException ex)
             { 
+                Log.TraceEvent(TraceEventType.Error, 0,
+                    $"[TMDb] Attempt {attempt}: HttpRequestException during GET {RedactApiKey(options.BaseUrl?.ToString() ?? apiUrl)} | {ex.GetType().Name}: {ex.Message}");
                 options = new RestClientOptions(req.RequestUri)
                 {
                     ConfigureMessageHandler = handler =>
@@ -244,10 +291,16 @@ internal class RestRequest
                 request.AddHeader("accept", "application/json");
                 try
                 {
+                    Log.TraceEvent(TraceEventType.Warning, 0,
+                        $"[TMDb] Attempt {attempt}: Retrying with URI {RedactApiKey(req.RequestUri?.ToString())} after HttpRequestException");
                     await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
                     resp = await client.GetAsync(request);
+                    Log.TraceEvent(TraceEventType.Information, 0,
+                        $"[TMDb] Attempt {attempt}: Retry response StatusCode={(int)resp.StatusCode} {resp.StatusCode} | ContentType={resp.ContentType ?? "<null>"} | Success={resp.IsSuccessStatusCode} | ContentLength={(resp.Content ?? string.Empty).Length}");
                 } catch (Exception e)
                 {
+                    Log.TraceEvent(TraceEventType.Error, 0,
+                        $"[TMDb] Attempt {attempt}: Retry failed with {e.GetType().Name}: {e.Message}");
                     // do nothing
                 }
             }
@@ -255,13 +308,19 @@ internal class RestRequest
 
             if (resp == null)
             {
+                sw.Stop();
+                Log.TraceEvent(TraceEventType.Warning, 0,
+                    $"[TMDb] Attempt {attempt}: No response (null). Will wait and retry. Elapsed={sw.ElapsedMilliseconds}ms");
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
                 continue;
             }
-            bool isJson = resp.ContentType.Equals("application/json");
+            bool isJson = !string.IsNullOrEmpty(resp.ContentType) && resp.ContentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase);
 
             if (resp.IsSuccessStatusCode && isJson)
             {
+                sw.Stop();
+                Log.TraceEvent(TraceEventType.Information, 0,
+                    $"[TMDb] Attempt {attempt}: Successful JSON response. Status={(int)resp.StatusCode} {resp.StatusCode}. Elapsed={sw.ElapsedMilliseconds}ms");
 #pragma warning disable IDISP011 // Don't return disposed instance
                 return resp;
 #pragma warning restore IDISP011 // Don't return disposed instance
@@ -277,28 +336,44 @@ internal class RestRequest
                 case (HttpStatusCode)429:
 
                     // TMDb sometimes gives us 0-second waits, which can lead to rapid succession of requests
+                    sw.Stop();
+                    Log.TraceEvent(TraceEventType.Warning, 0,
+                        $"[TMDb] Attempt {attempt}: Rate limited (429). Waiting 1s and retrying. Elapsed={sw.ElapsedMilliseconds}ms");
                     await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
                     continue;
                 case HttpStatusCode.Unauthorized:
+                    sw.Stop();
+                    Log.TraceEvent(TraceEventType.Error, 0,
+                        $"[TMDb] Attempt {attempt}: Unauthorized (401). Throwing.");
                     throw new UnauthorizedAccessException(
                         "Call to TMDb returned unauthorized. Most likely the provided API key is invalid.");
 
                 case HttpStatusCode.NotFound:
                     if (_client.ThrowApiExceptions)
                     {
+                        sw.Stop();
+                        Log.TraceEvent(TraceEventType.Error, 0,
+                            $"[TMDb] Attempt {attempt}: Not Found (404). Throwing NotFoundException. Message={(statusMessage?.StatusMessage ?? "<null>")}");
                         throw new NotFoundException(statusMessage);
                     }
                     else
                     {
+                        sw.Stop();
+                        Log.TraceEvent(TraceEventType.Warning, 0,
+                            $"[TMDb] Attempt {attempt}: Not Found (404). Returning null as ThrowApiExceptions is disabled.");
                         return null;
                     }
             }
-
+            sw.Stop();
+            Log.TraceEvent(TraceEventType.Error, 0,
+                $"[TMDb] Attempt {attempt}: HTTP error {(int)resp.StatusCode} {resp.StatusCode}. IsJson={isJson}. StatusMessage={(statusMessage?.StatusMessage ?? "<null>")}. Throwing GeneralHttpException.");
             throw new GeneralHttpException(resp.StatusCode);
 
         } while (timesToTry-- > 0);
 
         // We never reached a success
+        Log.TraceEvent(TraceEventType.Error, 0,
+            $"[TMDb] Exhausted all retries. Throwing RequestLimitExceededException. LastStatusMessage={(statusMessage?.StatusMessage ?? "<null>")}");
         throw new RequestLimitExceededException(statusMessage, null, null);
     }
 
