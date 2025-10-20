@@ -244,7 +244,8 @@ internal class RestRequest
                 request.AddHeader("accept", "application/json");
                 try
                 {
-                    await client.GetAsync(request);
+                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                    resp = await client.GetAsync(request);
                 } catch (Exception e)
                 {
                     // do nothing
@@ -254,6 +255,7 @@ internal class RestRequest
 
             if (resp == null)
             {
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
                 continue;
             }
             bool isJson = resp.ContentType.Equals("application/json");
