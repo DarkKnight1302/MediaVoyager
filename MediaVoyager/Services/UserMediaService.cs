@@ -13,19 +13,18 @@ namespace MediaVoyager.Services
         private readonly IUserMoviesRepository userMoviesRepository;
         private readonly IUserTvRepository userTvRepository;
         private readonly IUserRepository userRepository;
-        private readonly TMDbClient tmdbClient;
+        private readonly ITmdbCacheService tmdbCacheService;
 
         public UserMediaService(IUserMoviesRepository userMoviesRepository, 
                                IUserTvRepository userTvRepository,
                                IUserRepository userRepository,
-                               ISecretService secretService)
+                               ISecretService secretService,
+                               ITmdbCacheService tmdbCacheService)
         {
             this.userMoviesRepository = userMoviesRepository;
             this.userTvRepository = userTvRepository;
             this.userRepository = userRepository;
-            
-            string tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
-            this.tmdbClient = new TMDbClient(tmdbApiKey);
+            this.tmdbCacheService = tmdbCacheService;
         }
 
         public async Task AddMoviesToFavourites(string userId, List<SearchMovie> movies)
@@ -113,14 +112,14 @@ namespace MediaVoyager.Services
 
             var response = new WatchlistResponse();
 
-            // Fetch movies from TMDb
+            // Fetch movies from TMDb (via cache wrapper)
             if (user.movieWatchlist?.Any() == true)
             {
                 var movieTasks = user.movieWatchlist.Select(async movieId =>
                 {
                     try
                     {
-                        var movie = await this.tmdbClient.GetMovieAsync(int.Parse(movieId));
+                        var movie = await this.tmdbCacheService.GetMovieAsync(int.Parse(movieId));
                         if (movie != null)
                         {
                             return new Movie
@@ -145,14 +144,14 @@ namespace MediaVoyager.Services
                 response.movies = movies.Where(m => m != null).ToList();
             }
 
-            // Fetch TV shows from TMDb
+            // Fetch TV shows from TMDb (via cache wrapper)
             if (user.tvWatchlist?.Any() == true)
             {
                 var tvTasks = user.tvWatchlist.Select(async tvId =>
                 {
                     try
                     {
-                        var tvShow = await this.tmdbClient.GetTvShowAsync(int.Parse(tvId));
+                        var tvShow = await this.tmdbCacheService.GetTvShowAsync(int.Parse(tvId));
                         if (tvShow != null)
                         {
                             return new TvShow

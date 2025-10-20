@@ -21,16 +21,19 @@ namespace MediaVoyager.Services
         private readonly IGeminiRecommendationClient geminiRecommendationClient;
         private readonly IUserTvRepository userTvRepository;
         private readonly string tmdbApiKey;
+        private readonly ITmdbCacheService tmdbCacheService;
 
         public MediaRecommendationService(ISecretService secretService,
             IUserMoviesRepository userMoviesRepository,
             IGeminiRecommendationClient geminiRecommendationClient,
-            IUserTvRepository userTvRepository)
+            IUserTvRepository userTvRepository,
+            ITmdbCacheService tmdbCacheService)
         {
             this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
             this.geminiRecommendationClient = geminiRecommendationClient;
             this.userTvRepository = userTvRepository;
+            this.tmdbCacheService = tmdbCacheService;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
@@ -59,7 +62,7 @@ namespace MediaVoyager.Services
             if (results!= null && results.Count > 0)
             {
                 int movieId = results[0].Id;
-                TMDbLib.Objects.Movies.Movie movieTmdb = await tmdbClient.GetMovieAsync(movieId);
+                TMDbLib.Objects.Movies.Movie movieTmdb = await this.tmdbCacheService.GetMovieAsync(movieId);
                 if (movieTmdb != null)
                 {
                     MovieResponse movieResponse = new MovieResponse()
@@ -109,7 +112,7 @@ namespace MediaVoyager.Services
             if (results != null && results.Count > 0)
             {
                 int tvShowId = results[0].Id;
-                TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await tmdbClient.GetTvShowAsync(tvShowId);
+                TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await this.tmdbCacheService.GetTvShowAsync(tvShowId);
                 if (tvShowTmdb != null)
                 {
                     TvShowResponse tvShowResponse = new TvShowResponse()

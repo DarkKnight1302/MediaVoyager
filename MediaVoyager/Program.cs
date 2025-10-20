@@ -58,6 +58,11 @@ builder.Services.AddSingleton<IUserMediaService, UserMediaService>();
 builder.Services.AddSingleton<ISignInHandler, SignInHandler>();
 builder.Services.AddSingleton<IUserTvRepository, UserTvRepository>();
 
+// Cache repositories and services
+builder.Services.AddSingleton<ICacheRepository<MediaVoyager.Entities.MovieCache>, MovieCacheRepository>();
+builder.Services.AddSingleton<ICacheRepository<MediaVoyager.Entities.TvShowCache>, TvShowCacheRepository>();
+builder.Services.AddSingleton<ITmdbCacheService, TmdbCacheService>();
+
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();
 
