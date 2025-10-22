@@ -6,6 +6,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net; // Added for HttpStatusCode
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
@@ -26,13 +27,18 @@
         private readonly ILogger logger;
         // --- Rate Limiting State ---
         // The maximum number of requests allowed in the defined time period.
-        private static readonly int MaxRequests = 2;
+        private static readonly int MaxRequests = 9;
         // The time period over which the request limit is enforced.
         private static readonly TimeSpan TimePeriod = TimeSpan.FromMinutes(1);
         // A queue to store the timestamps of recent requests.
         private static readonly Queue<DateTime> RequestTimestamps = new Queue<DateTime>();
         // A semaphore to ensure thread-safe access to the request timestamps queue.
         private static readonly SemaphoreSlim RateLimitSemaphore = new SemaphoreSlim(1, 1);
+
+        // --- Daily Rate Limiting State (combined across all methods) ---
+        private static readonly int MaxRequestsPerDay = 250;
+        private static DateTime CurrentDay = DateTime.UtcNow.Date;
+        private static int DailyRequestCount = 0;
 
         /// <summary>
         /// Initializes a new instance of the GeminiRecommendationClient.
@@ -93,6 +99,11 @@
             }
             catch (HttpRequestException ex)
             {
+                // If this is our daily rate limit exception, bubble it up.
+                if (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    throw;
+                }
                 // Handle potential network or API errors
                 this.logger.LogError($"Error calling Gemini API: {ex.Message}");
             }
@@ -118,6 +129,22 @@
             await RateLimitSemaphore.WaitAsync();
             try
             {
+                // Reset daily counter if the day has changed
+                if (DateTime.UtcNow.Date != CurrentDay)
+                {
+                    CurrentDay = DateTime.UtcNow.Date;
+                    DailyRequestCount = 0;
+                }
+
+                // Enforce daily limit first (combined across both methods)
+                if (DailyRequestCount >= MaxRequestsPerDay)
+                {
+                    throw new HttpRequestException(
+                        $"Daily Gemini API request limit exceeded ({MaxRequestsPerDay} per day).",
+                        inner: null,
+                        statusCode: HttpStatusCode.TooManyRequests);
+                }
+
                 // First, remove any timestamps that are now outside the 1-minute window.
                 while (RequestTimestamps.Any() && (DateTime.UtcNow - RequestTimestamps.Peek()) > TimePeriod)
                 {
@@ -141,8 +168,16 @@
                     RequestTimestamps.Dequeue();
                 }
 
-                // Add the timestamp for the current request.
+                // Check again for day rollover before recording the request
+                if (DateTime.UtcNow.Date != CurrentDay)
+                {
+                    CurrentDay = DateTime.UtcNow.Date;
+                    DailyRequestCount = 0;
+                }
+
+                // Add the timestamp for the current request and increment the daily count.
                 RequestTimestamps.Enqueue(DateTime.UtcNow);
+                DailyRequestCount++;
             }
             finally
             {
@@ -263,6 +298,11 @@
             }
             catch (HttpRequestException ex)
             {
+                // If this is our daily rate limit exception, bubble it up.
+                if (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    throw;
+                }
                 // Handle potential network or API errors
                 this.logger.LogError($"Error calling Gemini API: {ex.Message}");
             }

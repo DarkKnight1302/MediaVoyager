@@ -58,9 +58,15 @@ namespace MediaVoyager.Services
             string[] movieParts = movie.Split('\n');
             string name = movieParts[0];
             int year = int.Parse(movieParts[1]);
-            SearchContainer<SearchMovie> searchContainer = await tmdbClient.SearchMovieAsync(name, 0, true, year).ConfigureAwait(false);
+            SearchContainer<SearchMovie> searchContainer = await tmdbClient.SearchMovieAsync(name, 0, false, year).ConfigureAwait(false);
 
             List<SearchMovie> results = searchContainer.Results;
+
+            if (results == null || results.Count == 0)
+            {
+                searchContainer = await tmdbClient.SearchMovieAsync(name, 0).ConfigureAwait(false);
+                results = searchContainer.Results;
+            }
 
             if (results!= null && results.Count > 0)
             {
@@ -108,9 +114,14 @@ namespace MediaVoyager.Services
             string name = tvShowParts[0];
             int year = int.Parse(tvShowParts[1]);
 
-            SearchContainer<SearchTv> searchContainer = await tmdbClient.SearchTvShowAsync(name, 0, true, year).ConfigureAwait(false);
+            SearchContainer<SearchTv> searchContainer = await tmdbClient.SearchTvShowAsync(name, 0, false, year).ConfigureAwait(false);
 
             List<SearchTv> results = searchContainer.Results;
+            if (results == null || results.Count == 0)
+            {
+                searchContainer = await tmdbClient.SearchTvShowAsync(name, 0).ConfigureAwait(false);
+                results = searchContainer.Results;
+            }
 
             if (results != null && results.Count > 0)
             {

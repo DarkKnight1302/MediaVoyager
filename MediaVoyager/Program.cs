@@ -4,11 +4,10 @@ using MediaVoyager.Handlers;
 using MediaVoyager.Repositories;
 using MediaVoyager.Services;
 using MediaVoyager.Services.Interfaces;
+using MediaVoyager.Middleware; // added
 using NewHorizonLib;
 using NewHorizonLib.Extensions;
 using NewHorizonLib.Services;
-using NewHorizonLib.Services.Interfaces;
-using System.Net;
 using TMDbLib.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -91,6 +90,9 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
 }
+
+// Handle HttpRequestException with429 status and return429 to REST clients
+app.UseHttpRequestExceptionHandler();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
