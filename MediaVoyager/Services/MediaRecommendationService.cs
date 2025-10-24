@@ -68,7 +68,7 @@ namespace MediaVoyager.Services
                 results = searchContainer.Results;
             }
 
-            if (results!= null && results.Count > 0)
+            if (results != null && results.Count > 0)
             {
                 int movieId = results[0].Id;
                 TMDbLib.Objects.Movies.Movie movieTmdb = await this.tmdbCacheService.GetMovieAsync(movieId);
@@ -79,7 +79,7 @@ namespace MediaVoyager.Services
                         Id = movieId.ToString(),
                         Genres = movieTmdb.Genres,
                         Poster = movieTmdb.PosterPath,
-                        OriginCountry = movieTmdb.ProductionCountries[0].Name,
+                        OriginCountry = movieTmdb.ProductionCountries != null && movieTmdb.ProductionCountries.Count > 0 ? movieTmdb.ProductionCountries[0].Name : string.Empty,
                         OverView = movieTmdb.Overview,
                         ReleaseDate = movieTmdb.ReleaseDate,
                         TagLine = movieTmdb.Tagline,
@@ -134,7 +134,7 @@ namespace MediaVoyager.Services
                         Id = tvShowId.ToString(),
                         Genres = tvShowTmdb.Genres,
                         Poster = tvShowTmdb.PosterPath,
-                        OriginCountry = tvShowTmdb.OriginCountry[0],
+                        OriginCountry = tvShowTmdb.OriginCountry != null && tvShowTmdb.OriginCountry.Count > 0 ? tvShowTmdb.OriginCountry[0] : string.Empty,
                         OverView = tvShowTmdb.Overview,
                         FirstAirDate = tvShowTmdb.FirstAirDate,
                         TagLine = tvShowTmdb.Tagline,
