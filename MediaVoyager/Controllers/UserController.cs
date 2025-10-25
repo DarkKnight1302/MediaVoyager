@@ -184,7 +184,7 @@ namespace MediaVoyager.Controllers
         }
 
         [Authorize]
-        [HttpDelete("movies/removeFromWatchlist")]
+        [HttpPost("movies/removeFromWatchlist")]
         [RateLimit(100, 5)]
         public async Task<IActionResult> RemoveMoviesFromWatchlist([FromBody] WatchlistMovieRequest request)
         {
@@ -262,7 +262,7 @@ namespace MediaVoyager.Controllers
         }
 
         [Authorize]
-        [HttpDelete("tv/removeFromWatchlist")]
+        [HttpPost("tv/removeFromWatchlist")]
         [RateLimit(100, 5)]
         public async Task<IActionResult> RemoveTvShowsFromWatchlist([FromBody] WatchlistTvRequest request)
         {
