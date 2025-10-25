@@ -298,6 +298,13 @@ internal class RestRequest
             }
             bool isJson = !string.IsNullOrEmpty(resp.ContentType) && resp.ContentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase);
 
+            // Print JSON response body if available
+            if (isJson)
+            {
+                string body = resp.Content ?? string.Empty;
+                Console.WriteLine($"[TMDb] Attempt {attempt}: JSON Response Body:\n{body}");
+            }
+
             if (resp.IsSuccessStatusCode && isJson)
             {
                 sw.Stop();
