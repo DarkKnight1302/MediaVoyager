@@ -39,6 +39,20 @@ namespace MediaVoyager.Controllers
             {
                 return Unauthorized();
             }
+
+            // Validate that all movies have title and release date
+            if (addUserMovieRequest?.movies != null)
+            {
+                var invalidMovies = addUserMovieRequest.movies
+                    .Where(m => string.IsNullOrWhiteSpace(m.Title) || !m.ReleaseDate.HasValue)
+                    .ToList();
+
+                if (invalidMovies.Any())
+                {
+                    return BadRequest("All movies must have a title and release date");
+                }
+            }
+
             await this.userMediaService.AddMoviesToFavourites(userId, addUserMovieRequest.movies);
             return Ok();
         }
@@ -61,6 +75,20 @@ namespace MediaVoyager.Controllers
             {
                 return Unauthorized();
             }
+
+            // Validate that all movies have title and release date
+            if (addUserMovieRequest?.movies != null)
+            {
+                var invalidMovies = addUserMovieRequest.movies
+                    .Where(m => string.IsNullOrWhiteSpace(m.Title) || !m.ReleaseDate.HasValue)
+                    .ToList();
+
+                if (invalidMovies.Any())
+                {
+                    return BadRequest("All movies must have a title and release date");
+                }
+            }
+
             await this.userMediaService.AddMoviesToWatchHistory(userId, addUserMovieRequest.movies);
             return Ok();
         }
@@ -83,6 +111,20 @@ namespace MediaVoyager.Controllers
             {
                 return Unauthorized();
             }
+
+            // Validate that all TV shows have name and first air date
+            if (addUserTvRequest?.tvShows != null)
+            {
+                var invalidTvShows = addUserTvRequest.tvShows
+                    .Where(tv => string.IsNullOrWhiteSpace(tv.Name) || !tv.FirstAirDate.HasValue)
+                    .ToList();
+
+                if (invalidTvShows.Any())
+                {
+                    return BadRequest("All TV shows must have a name and first air date");
+                }
+            }
+
             await this.userMediaService.AddTvShowsToFavourites(userId, addUserTvRequest.tvShows);
             return Ok();
         }
@@ -105,6 +147,20 @@ namespace MediaVoyager.Controllers
             {
                 return Unauthorized();
             }
+
+            // Validate that all TV shows have name and first air date
+            if (addUserTvRequest?.tvShows != null)
+            {
+                var invalidTvShows = addUserTvRequest.tvShows
+                    .Where(tv => string.IsNullOrWhiteSpace(tv.Name) || !tv.FirstAirDate.HasValue)
+                    .ToList();
+
+                if (invalidTvShows.Any())
+                {
+                    return BadRequest("All TV shows must have a name and first air date");
+                }
+            }
+
             await this.userMediaService.AddTvShowsToWatchHistory(userId, addUserTvRequest.tvShows);
             return Ok();
         }
