@@ -66,6 +66,24 @@ namespace MediaVoyager.Repositories
             await container.UpsertItemAsync<UserMovies>(userMovies, new PartitionKey(userMovies.id));
         }
 
+        public async Task RemoveFavourites(string userId, List<string> movieIds)
+        {
+            UserMovies userMovies = await this.GetUserMovies(userId);
+            if (userMovies == null)
+            {
+                return;
+            }
+
+            var moviesToRemove = userMovies.favouriteMovies.Where(m => movieIds.Contains(m.Id)).ToList();
+            foreach (var movie in moviesToRemove)
+            {
+                userMovies.favouriteMovies.Remove(movie);
+            }
+
+            var container = this.GetContainer();
+            await container.UpsertItemAsync<UserMovies>(userMovies, new PartitionKey(userId));
+        }
+
         private Container GetContainer()
         {
             return this.cosmosDbService.GetContainer("UserMovies");

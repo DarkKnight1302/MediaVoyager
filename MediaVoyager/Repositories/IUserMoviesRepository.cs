@@ -14,5 +14,7 @@ namespace MediaVoyager.Repositories
         public Task<UserMovies> GetUserMovies(string userId);
 
         public Task UpsertUserMovies(UserMovies userMovies);
+
+        public Task RemoveFavourites(string userId, List<string> movieIds);
     }
 }

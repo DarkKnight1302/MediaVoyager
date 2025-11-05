@@ -102,6 +102,56 @@ namespace MediaVoyager.Services
             await this.userRepository.RemoveTvShowsFromWatchlist(userId, tvIds);
         }
 
+        public async Task RemoveMoviesFromFavourites(string userId, List<string> movieIds)
+        {
+            await this.userMoviesRepository.RemoveFavourites(userId, movieIds);
+        }
+
+        public async Task<FavouriteMoviesResponse> GetUserFavouriteMovies(string userId)
+        {
+            var userMovies = await this.userMoviesRepository.GetUserMovies(userId);
+            if (userMovies == null)
+            {
+                throw new ArgumentException($"User with id {userId} not found");
+            }
+
+            var response = new FavouriteMoviesResponse();
+
+            // Fetch movies from TMDb (via cache wrapper)
+            if (userMovies.favouriteMovies?.Any() == true)
+            {
+                var movieTasks = userMovies.favouriteMovies.Select(async favouriteMovie =>
+                {
+                    try
+                    {
+                        var movie = await this.tmdbCacheService.GetMovieAsync(int.Parse(favouriteMovie.Id));
+                        if (movie != null)
+                        {
+                            return new Movie
+                            {
+                                Id = movie.Id.ToString(),
+                                Title = movie.Title,
+                                ReleaseDate = movie.ReleaseDate,
+                                Poster = movie.PosterPath,
+                                Overview = movie.Overview
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error and continue
+                        Console.WriteLine($"Error fetching movie {favouriteMovie.Id}: {ex.Message}");
+                    }
+                    return null;
+                });
+
+                var movies = await Task.WhenAll(movieTasks);
+                response.movies = movies.Where(m => m != null).ToList();
+            }
+
+            return response;
+        }
+
         public async Task<WatchlistResponse> GetUserWatchlist(string userId)
         {
             var user = await this.userRepository.GetUser(userId);

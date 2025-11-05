@@ -58,6 +58,71 @@ namespace MediaVoyager.Controllers
         }
 
         [Authorize]
+        [HttpPost("movies/removeFromFavourites")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> RemoveMoviesFromFavourites([FromBody] WatchlistMovieRequest request)
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            if (request?.movieIds == null || !request.movieIds.Any())
+            {
+                return BadRequest("Movie IDs are required");
+            }
+
+            try
+            {
+                await this.userMediaService.RemoveMoviesFromFavourites(userId, request.movieIds);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [Authorize]
+        [HttpGet("movies/favourites")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> GetFavouriteMovies()
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var favourites = await this.userMediaService.GetUserFavouriteMovies(userId);
+                return Ok(favourites);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [Authorize]
         [HttpPost("movies/addWatchHistory")]
         [RateLimit(100, 5)]
         public async Task<IActionResult> AddMoviesToWatchHistory([FromBody] AddUserMovieRequest addUserMovieRequest)

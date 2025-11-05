@@ -16,5 +16,9 @@ namespace MediaVoyager.Services.Interfaces
         public Task AddTvShowsToWatchlist(string userId, List<string> tvIds);
         public Task RemoveTvShowsFromWatchlist(string userId, List<string> tvIds);
         public Task<WatchlistResponse> GetUserWatchlist(string userId);
+        
+        // Favourites methods
+        public Task RemoveMoviesFromFavourites(string userId, List<string> movieIds);
+        public Task<FavouriteMoviesResponse> GetUserFavouriteMovies(string userId);
     }
 }
