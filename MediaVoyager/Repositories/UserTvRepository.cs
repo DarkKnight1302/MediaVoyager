@@ -65,6 +65,24 @@ namespace MediaVoyager.Repositories
             await container.UpsertItemAsync<UserTv>(userTv, new PartitionKey(userTv.id));
         }
 
+        public async Task RemoveFavourites(string userId, List<string> tvIds)
+        {
+            UserTv userTv = await this.GetUserTv(userId);
+            if (userTv == null)
+            {
+                return;
+            }
+
+            var tvShowsToRemove = userTv.favouriteTv.Where(tv => tvIds.Contains(tv.Id)).ToList();
+            foreach (var tvShow in tvShowsToRemove)
+            {
+                userTv.favouriteTv.Remove(tvShow);
+            }
+
+            var container = this.GetContainer();
+            await container.UpsertItemAsync<UserTv>(userTv, new PartitionKey(userId));
+        }
+
         private Container GetContainer()
         {
             return this.cosmosDbService.GetContainer("UserTv");

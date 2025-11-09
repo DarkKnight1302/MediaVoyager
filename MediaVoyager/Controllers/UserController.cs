@@ -420,5 +420,70 @@ namespace MediaVoyager.Controllers
                 return BadRequest($"Error removing TV shows from watchlist: {ex.Message}");
             }
         }
+
+        [Authorize]
+        [HttpGet("tv/favourites")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> GetFavouriteTvShows()
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var favourites = await this.userMediaService.GetUserFavouriteTvShows(userId);
+                return Ok(favourites);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("tv/removeFromFavourites")]
+        [RateLimit(100, 5)]
+        public async Task<IActionResult> RemoveTvShowsFromFavourites([FromBody] WatchlistTvRequest request)
+        {
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID header is required");
+            }
+
+            bool isValid = this.tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
+
+            if (!isValid)
+            {
+                return Unauthorized();
+            }
+
+            if (request?.tvIds == null || !request.tvIds.Any())
+            {
+                return BadRequest("TV show IDs are required");
+            }
+
+            try
+            {
+                await this.userMediaService.RemoveTvShowsFromFavourites(userId, request.tvIds);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
     }
 }

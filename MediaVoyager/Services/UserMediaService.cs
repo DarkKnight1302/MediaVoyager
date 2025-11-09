@@ -107,6 +107,11 @@ namespace MediaVoyager.Services
             await this.userMoviesRepository.RemoveFavourites(userId, movieIds);
         }
 
+        public async Task RemoveTvShowsFromFavourites(string userId, List<string> tvIds)
+        {
+            await this.userTvRepository.RemoveFavourites(userId, tvIds);
+        }
+
         public async Task<FavouriteMoviesResponse> GetUserFavouriteMovies(string userId)
         {
             var userMovies = await this.userMoviesRepository.GetUserMovies(userId);
@@ -218,6 +223,51 @@ namespace MediaVoyager.Services
                     {
                         // Log error and continue
                         Console.WriteLine($"Error fetching TV show {tvId}: {ex.Message}");
+                    }
+                    return null;
+                });
+
+                var tvShows = await Task.WhenAll(tvTasks);
+                response.tvShows = tvShows.Where(tv => tv != null).ToList();
+            }
+
+            return response;
+        }
+
+        public async Task<FavouriteTvShowsResponse> GetUserFavouriteTvShows(string userId)
+        {
+            var userTv = await this.userTvRepository.GetUserTv(userId);
+            if (userTv == null)
+            {
+                throw new ArgumentException($"User with id {userId} not found");
+            }
+
+            var response = new FavouriteTvShowsResponse();
+
+            // Fetch TV shows from TMDb (via cache wrapper)
+            if (userTv.favouriteTv?.Any() == true)
+            {
+                var tvTasks = userTv.favouriteTv.Select(async favouriteTv =>
+                {
+                    try
+                    {
+                        var tvShow = await this.tmdbCacheService.GetTvShowAsync(int.Parse(favouriteTv.Id));
+                        if (tvShow != null)
+                        {
+                            return new TvShow
+                            {
+                                Id = tvShow.Id.ToString(),
+                                Title = tvShow.Name,
+                                FirstAirDate = tvShow.FirstAirDate,
+                                Poster = tvShow.PosterPath,
+                                Overview = tvShow.Overview
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error and continue
+                        Console.WriteLine($"Error fetching TV show {favouriteTv.Id}: {ex.Message}");
                     }
                     return null;
                 });
