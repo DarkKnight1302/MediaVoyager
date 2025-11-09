@@ -203,7 +203,7 @@
                 {
                     Parts = new List<Part>
                 {
-                    new Part { Text = "You're a movie recommendation bot, you will recommend good movie based on given favorites as reference and the recommended movie should not be part of watch history. Your output should only be the `name of the movie` and `release year` in next line and only recommend one movie. Example response : <Movie name>\n<Release year>" }
+                    new Part { Text = "You're a taste based movie recommendation bot, you have to understand the user's taste in movies based on list of provided favourite movies only (not watch history) and you will recommend good movie based on given favorites only and the recommended movie should not be part of watch history. Your output should only be the `name of the movie` and `release year` in next line and only recommend one movie. Example response : <Movie name>\n<Release year>" }
                 }
                 },
                 Contents = new List<Content>
@@ -235,7 +235,7 @@
                 {
                     Parts = new List<Part>
                 {
-                    new Part { Text = "You're a tv show recommendation bot, you will recommend a tv show based on given favourites as reference and the recommended tv show should not be part of watch history, Your output should only be the `name of the show` and `first air year` in next line and only recommend one show. Example response : <Tv show name>\n<First air year>" }
+                    new Part { Text = "You're a taste based tv show recommendation bot, you have to understand the user's taste in tv shows based on list of provided favourite tv shows only (not watch history) and you will recommend a tv show based on given favourites only and the recommended tv show should not be part of watch history, Your output should only be the `name of the show` and `first air year` in next line and only recommend one show. Example response : <Tv show name>\n<First air year>" }
                 }
                 },
                 Contents = new List<Content>
