@@ -28,7 +28,7 @@ namespace MediaVoyager.Controllers
 
         [HttpGet("movie")]
         [Authorize]
-        [RateLimit(10, 720)]
+        [RateLimit(20, 720)]
         public async Task<IActionResult> GetMovieRecommendation()
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
@@ -48,7 +48,7 @@ namespace MediaVoyager.Controllers
 
         [HttpGet("tvshow")]
         [Authorize]
-        [RateLimit(10, 720)]
+        [RateLimit(20, 720)]
         public async Task<IActionResult> GetTvShowRecommendation()
         {
             string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
