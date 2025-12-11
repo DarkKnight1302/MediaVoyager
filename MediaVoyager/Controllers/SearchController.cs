@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MediaVoyager.Entities;
+using MediaVoyager.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NewHorizonLib.Attributes;
@@ -14,11 +16,13 @@ namespace MediaVoyager.Controllers
     public class SearchController : ControllerBase
     {
         private readonly TMDbClient tmdbClient;
+        private readonly IUserActivityRepository userActivityRepository;
 
-        public SearchController(ISecretService secretService)
+        public SearchController(ISecretService secretService, IUserActivityRepository userActivityRepository)
         {
             string tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.tmdbClient = new TMDbClient(tmdbApiKey);
+            this.userActivityRepository = userActivityRepository;
         }
 
         [Authorize]
@@ -30,7 +34,17 @@ namespace MediaVoyager.Controllers
             {
                 return BadRequest();
             }
+
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+
             SearchContainer<SearchMovie> movies = await this.tmdbClient.SearchMovieAsync(keyword);
+
+            // Log movie search activity
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await userActivityRepository.LogActivityAsync(userId, ActivityTypes.MovieSearch, keyword);
+            }
+
             if (movies.Results.Count == 0)
             {
                 return NotFound();
@@ -47,7 +61,17 @@ namespace MediaVoyager.Controllers
             {
                 return BadRequest();
             }
+
+            string userId = HttpContext.Request.Headers["x-uid"].FirstOrDefault();
+
             SearchContainer<SearchTv> tvShows = await this.tmdbClient.SearchTvShowAsync(keyword);
+
+            // Log TV search activity
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await userActivityRepository.LogActivityAsync(userId, ActivityTypes.TvSearch, keyword);
+            }
+
             if (tvShows.Results.Count == 0)
             {
                 return NotFound();

@@ -4,13 +4,14 @@ using MediaVoyager.Handlers;
 using MediaVoyager.Repositories;
 using MediaVoyager.Services;
 using MediaVoyager.Services.Interfaces;
-using MediaVoyager.Middleware; // added
+using MediaVoyager.Middleware;
 using NewHorizonLib;
 using NewHorizonLib.Extensions;
 using NewHorizonLib.Services;
 using TMDbLib.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +63,10 @@ builder.Services.AddSingleton<ICacheRepository<MediaVoyager.Entities.MovieCache>
 builder.Services.AddSingleton<ICacheRepository<MediaVoyager.Entities.TvShowCache>, TvShowCacheRepository>();
 builder.Services.AddSingleton<ITmdbCacheService, TmdbCacheService>();
 
+// Dashboard and activity tracking services
+builder.Services.AddSingleton<IUserActivityRepository, UserActivityRepository>();
+builder.Services.AddSingleton<IDashboardService, DashboardService>();
+
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();
 
@@ -74,6 +79,10 @@ if (secretService != null)
     string tmdbAuth = secretService.GetSecretValue("tmdb_auth");
     SecretUtility.tmdbAuthHeader = tmdbAuth;
 }
+
+// Enable serving static files from wwwroot
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -96,5 +105,12 @@ app.UseHttpRequestExceptionHandler();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+// Map dashboard redirect
+app.MapGet("/dashboard", context =>
+{
+    context.Response.Redirect("/dashboard/index.html");
+    return Task.CompletedTask;
+});
 
 app.Run();

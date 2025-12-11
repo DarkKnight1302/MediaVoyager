@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaVoyager</title>
+    <style>
+        * {
+            margin: 0;
+   padding: 0;
+            box-sizing: border-box;
+     }
+
+        body {
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+   display: flex;
+    align-items: center;
+            justify-content: center;
+   color: #fff;
+  }
+
+     .container {
+            text-align: center;
+          padding: 40px;
+        }
+
+      .logo {
+    font-size: 64px;
+            margin-bottom: 20px;
+  }
+
+        h1 {
+            font-size: 48px;
+          margin-bottom: 10px;
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+ -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+ background-clip: text;
+        }
+
+        .tagline {
+   font-size: 18px;
+color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 40px;
+     }
+
+        .links {
+          display: flex;
+    gap: 20px;
+justify-content: center;
+          flex-wrap: wrap;
+        }
+
+     .link-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+        border-radius: 16px;
+            padding: 30px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+     color: #fff;
+      transition: transform 0.3s, box-shadow 0.3s;
+  min-width: 200px;
+        }
+
+        .link-card:hover {
+  transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(233, 69, 96, 0.3);
+        }
+
+.link-card .icon {
+            font-size: 36px;
+            margin-bottom: 15px;
+     }
+
+  .link-card h3 {
+        font-size: 18px;
+         margin-bottom: 8px;
+  }
+
+        .link-card p {
+font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .api-info {
+      margin-top: 60px;
+            padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            max-width: 600px;
+        }
+
+        .api-info h4 {
+            font-size: 14px;
+          color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 10px;
+        text-transform: uppercase;
+         letter-spacing: 1px;
+        }
+
+        .api-info code {
+       display: block;
+            background: rgba(0, 0, 0, 0.3);
+         padding: 10px 15px;
+          border-radius: 6px;
+            font-size: 13px;
+            color: #38ef7d;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">??</div>
+        <h1>MediaVoyager</h1>
+        <p class="tagline">Your personalized movie & TV show recommendation engine</p>
+
+ <div class="links">
+            <a href="/dashboard/index.html" class="link-card">
+          <div class="icon">??</div>
+     <h3>Analytics Dashboard</h3>
+   <p>View live metrics & charts</p>
+            </a>
+            <a href="/swagger" class="link-card">
+         <div class="icon">??</div>
+                <h3>API Documentation</h3>
+  <p>Explore the REST API</p>
+ </a>
+   <a href="/health" class="link-card">
+      <div class="icon">??</div>
+     <h3>Health Check</h3>
+    <p>Service status</p>
+            </a>
+        </div>
+
+        <div class="api-info">
+       <h4>Quick API Endpoints</h4>
+<code>GET /api/dashboard - Full dashboard metrics</code>
+     <code>GET /api/dashboard/signups - User signup data</code>
+            <code>GET /api/dashboard/active-users - DAU/MAU metrics</code>
+            <code>GET /api/dashboard/recommendations - Recommendation stats</code>
+ <code>GET /api/dashboard/searches - Search analytics</code>
+    <code>GET /api/dashboard/watchlist - Watchlist metrics</code>
+        </div>
+    </div>
+</body>
+</html>

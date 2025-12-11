@@ -1,6 +1,8 @@
 ﻿using MediaVoyager.Constants;
+using MediaVoyager.Entities;
 using MediaVoyager.Handlers;
 using MediaVoyager.Models;
+using MediaVoyager.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using NewHorizonLib.Attributes;
 using NewHorizonLib.Services.Interfaces;
@@ -14,11 +16,13 @@ namespace MediaVoyager.Controllers
     {
         private readonly ITokenService tokenService;
         private readonly ISignInHandler signInHandler;
+        private readonly IUserActivityRepository userActivityRepository;
 
-        public SignInController(ITokenService tokenService, ISignInHandler signInHandler)
+        public SignInController(ITokenService tokenService, ISignInHandler signInHandler, IUserActivityRepository userActivityRepository)
         {
             this.tokenService = tokenService;
             this.signInHandler = signInHandler;
+            this.userActivityRepository = userActivityRepository;
         }
 
         [HttpGet]
@@ -47,6 +51,10 @@ namespace MediaVoyager.Controllers
             {
                 return BadRequest("Invalid OTP");
             }
+            
+            // Log user login activity
+            await this.userActivityRepository.LogActivityAsync(email, ActivityTypes.Login, "OTP Login");
+
             SignInResponse signInResponse = new SignInResponse
             {
                 AuthToken = authToken,

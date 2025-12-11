@@ -1,5 +1,7 @@
 ﻿using MediaVoyager.Constants;
+using MediaVoyager.Entities;
 using MediaVoyager.Models;
+using MediaVoyager.Repositories;
 using MediaVoyager.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,15 +17,18 @@ namespace MediaVoyager.Controllers
         private readonly IMediaRecommendationService mediaRecommendationService;
         private readonly ILogger<RecommendationController> logger;
         private readonly ITokenService tokenService;
+        private readonly IUserActivityRepository userActivityRepository;
 
         public RecommendationController(
             IMediaRecommendationService mediaRecommendationService,
             ILogger<RecommendationController> logger,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            IUserActivityRepository userActivityRepository)
         {
             this.mediaRecommendationService = mediaRecommendationService;
             this.tokenService = tokenService;
             this.logger = logger;
+            this.userActivityRepository = userActivityRepository;
         }
 
         [HttpGet("movie")]
@@ -43,6 +48,10 @@ namespace MediaVoyager.Controllers
             {
                 return NotFound();
             }
+            
+            // Log movie recommendation activity
+            await userActivityRepository.LogActivityAsync(userId, ActivityTypes.MovieRecommendation, movieResponse.Title);
+                
             return Ok(movieResponse);
         }
 
@@ -63,6 +72,10 @@ namespace MediaVoyager.Controllers
             {
                 return NotFound();
             }
+     
+            // Log TV show recommendation activity
+            await userActivityRepository.LogActivityAsync(userId, ActivityTypes.TvRecommendation, tvShowResponse.Title);
+                
             return Ok(tvShowResponse);
         }
     }
