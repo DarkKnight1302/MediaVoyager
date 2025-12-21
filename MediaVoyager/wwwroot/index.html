@@ -2,148 +2,194 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediaVoyager</title>
     <style>
-        * {
+   * {
             margin: 0;
-   padding: 0;
-            box-sizing: border-box;
-     }
+            padding: 0;
+         box-sizing: border-box;
+   }
 
         body {
-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-   display: flex;
-    align-items: center;
-            justify-content: center;
+   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+ background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+ min-height: 100vh;
+            display: flex;
+     align-items: center;
+  justify-content: center;
    color: #fff;
+    }
+
+        .container {
+            text-align: center;
+    padding: 40px;
   }
 
-     .container {
-            text-align: center;
-          padding: 40px;
+        .logo {
+   font-size: 64px;
+    margin-bottom: 20px;
+            width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #e94560, #ff6b6b);
+        border-radius: 20px;
+       display: flex;
+  align-items: center;
+       justify-content: center;
+     margin: 0 auto 20px auto;
+    }
+
+        .logo svg {
+         width: 48px;
+  height: 48px;
+ fill: white;
         }
 
-      .logo {
-    font-size: 64px;
-            margin-bottom: 20px;
-  }
-
         h1 {
-            font-size: 48px;
-          margin-bottom: 10px;
+    font-size: 48px;
+    margin-bottom: 10px;
             background: linear-gradient(90deg, #e94560, #ff6b6b);
- -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
- background-clip: text;
+       -webkit-background-clip: text;
+       -webkit-text-fill-color: transparent;
+        background-clip: text;
         }
 
         .tagline {
-   font-size: 18px;
-color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 40px;
-     }
-
-        .links {
-          display: flex;
-    gap: 20px;
-justify-content: center;
-          flex-wrap: wrap;
+     font-size: 18px;
+      color: rgba(255, 255, 255, 0.7);
+   margin-bottom: 40px;
         }
 
-     .link-card {
+     .links {
+            display: flex;
+     gap: 20px;
+       justify-content: center;
+  flex-wrap: wrap;
+        }
+
+        .link-card {
       background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-        border-radius: 16px;
-            padding: 30px 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-decoration: none;
-     color: #fff;
-      transition: transform 0.3s, box-shadow 0.3s;
-  min-width: 200px;
+ backdrop-filter: blur(10px);
+            border-radius: 16px;
+   padding: 30px 40px;
+   border: 1px solid rgba(255, 255, 255, 0.1);
+       text-decoration: none;
+            color: #fff;
+       transition: transform 0.3s, box-shadow 0.3s;
+      min-width: 200px;
         }
 
         .link-card:hover {
-  transform: translateY(-5px);
+    transform: translateY(-5px);
             box-shadow: 0 10px 40px rgba(233, 69, 96, 0.3);
         }
 
-.link-card .icon {
-            font-size: 36px;
-            margin-bottom: 15px;
-     }
-
-  .link-card h3 {
-        font-size: 18px;
-         margin-bottom: 8px;
-  }
-
-        .link-card p {
-font-size: 14px;
-            color: rgba(255, 255, 255, 0.6);
+        .link-card .icon {
+   width: 50px;
+            height: 50px;
+            border-radius: 12px;
+      display: flex;
+          align-items: center;
+            justify-content: center;
+          margin: 0 auto 15px auto;
         }
 
-        .api-info {
-      margin-top: 60px;
+        .link-card .icon svg {
+       width: 28px;
+    height: 28px;
+ fill: white;
+      }
+
+        .link-card.dashboard .icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+     .link-card.api .icon { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .link-card.health .icon { background: linear-gradient(135deg, #fc4a1a, #f7b733); }
+
+        .link-card h3 {
+            font-size: 18px;
+   margin-bottom: 8px;
+        }
+
+        .link-card p {
+            font-size: 14px;
+         color: rgba(255, 255, 255, 0.6);
+        }
+
+   .api-info {
+   margin-top: 60px;
             padding: 20px;
-      background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            max-width: 600px;
+background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+         max-width: 600px;
         }
 
         .api-info h4 {
-            font-size: 14px;
-          color: rgba(255, 255, 255, 0.5);
-    margin-bottom: 10px;
-        text-transform: uppercase;
-         letter-spacing: 1px;
+          font-size: 14px;
+     color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+         text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .api-info code {
-       display: block;
-            background: rgba(0, 0, 0, 0.3);
-         padding: 10px 15px;
-          border-radius: 6px;
-            font-size: 13px;
-            color: #38ef7d;
+   display: block;
+background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+   border-radius: 6px;
+    font-size: 13px;
+       color: #38ef7d;
             margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">??</div>
-        <h1>MediaVoyager</h1>
-        <p class="tagline">Your personalized movie & TV show recommendation engine</p>
+        <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+  </svg>
+        </div>
+      <h1>MediaVoyager</h1>
+        <p class="tagline">Your personalized movie &amp; TV show recommendation engine</p>
 
- <div class="links">
-            <a href="/dashboard/index.html" class="link-card">
-          <div class="icon">??</div>
-     <h3>Analytics Dashboard</h3>
-   <p>View live metrics & charts</p>
-            </a>
-            <a href="/swagger" class="link-card">
-         <div class="icon">??</div>
-                <h3>API Documentation</h3>
-  <p>Explore the REST API</p>
- </a>
-   <a href="/health" class="link-card">
-      <div class="icon">??</div>
-     <h3>Health Check</h3>
-    <p>Service status</p>
-            </a>
+   <div class="links">
+    <a href="/dashboard/index.html" class="link-card dashboard">
+             <div class="icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+     </svg>
+     </div>
+    <h3>Analytics Dashboard</h3>
+             <p>View live metrics &amp; charts</p>
+          </a>
+            <a href="/swagger" class="link-card api">
+   <div class="icon">
+         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+         </svg>
+        </div>
+    <h3>API Documentation</h3>
+         <p>Explore the REST API</p>
+     </a>
+    <a href="/health" class="link-card health">
+  <div class="icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+    </div>
+           <h3>Health Check</h3>
+         <p>Service status</p>
+          </a>
         </div>
 
         <div class="api-info">
-       <h4>Quick API Endpoints</h4>
-<code>GET /api/dashboard - Full dashboard metrics</code>
-     <code>GET /api/dashboard/signups - User signup data</code>
-            <code>GET /api/dashboard/active-users - DAU/MAU metrics</code>
-            <code>GET /api/dashboard/recommendations - Recommendation stats</code>
- <code>GET /api/dashboard/searches - Search analytics</code>
-    <code>GET /api/dashboard/watchlist - Watchlist metrics</code>
+            <h4>Quick API Endpoints</h4>
+            <code>GET /api/dashboard - Full dashboard metrics</code>
+          <code>GET /api/dashboard/signups - User signup data</code>
+         <code>GET /api/dashboard/active-users - DAU/MAU metrics</code>
+       <code>GET /api/dashboard/recommendations - Recommendation stats</code>
+            <code>GET /api/dashboard/searches - Search analytics</code>
+        <code>GET /api/dashboard/watchlist - Watchlist metrics</code>
         </div>
     </div>
 </body>
