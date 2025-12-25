@@ -121,6 +121,7 @@ The application requires the following secrets (managed via Azure Key Vault or s
 | Secret | Description |
 |--------|-------------|
 | `gemini_api_key` | Google Gemini API key for AI recommendations |
+| `groq_api_key` | Groq API key for AI recommendations (Chat Completions) |
 | `tmdb_auth` | TMDb API authentication token |
 
 ## 📦 Dependencies

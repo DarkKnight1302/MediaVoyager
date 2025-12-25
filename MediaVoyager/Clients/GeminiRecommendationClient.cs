@@ -20,7 +20,7 @@
     /// This client includes a rate-limiting mechanism to ensure that no more than
     /// 2 requests are sent per minute.
     /// </summary>
-    public class GeminiRecommendationClient : IDisposable, IGeminiRecommendationClient
+    public class GeminiRecommendationClient : IDisposable, IGeminiRecommendationClient, IRecommendationClient
     {
         private readonly HttpClient _httpClient;
 
@@ -226,7 +226,7 @@
             // Helper function to format a list of movies into a string like "['Movie1', 'Movie2']"
             Func<List<string>, string> formatMovieList = movies => $"[`{string.Join("`, `", movies.Select(m => m.Replace("`", "\\`")))}`]";
 
-            string prompt1 = $"Favourite Tv shows : {formatMovieList(favouriteTvShows)}";
+            string prompt1 = $"[ {formatMovieList(favouriteTvShows)}";
             string prompt2 = $"Watch history : {formatMovieList(watchHistory)}";
 
             var request = new GeminiRequest

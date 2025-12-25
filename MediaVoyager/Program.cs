@@ -44,6 +44,7 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 builder.Services.AddHealthChecks();
+builder.Services.AddHttpContextAccessor();
 
 // Configure host options for containers
 builder.Host.ConfigureHostOptions(options =>
@@ -51,6 +52,8 @@ builder.Host.ConfigureHostOptions(options =>
     options.ShutdownTimeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddSingleton<IGeminiRecommendationClient, GeminiRecommendationClient>();
+builder.Services.AddSingleton<IGroqRecommendationClient, GroqRecommendationClient>();
+builder.Services.AddSingleton<MediaVoyager.Services.Interfaces.IRecommendationClientResolver, RecommendationClientResolver>();
 builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationService>();

@@ -17,23 +17,29 @@ namespace MediaVoyager.Services
 {
     public class MediaRecommendationService : IMediaRecommendationService
     {
+        private const string ProviderHeaderName = "x-recommendation-provider";
+
         private readonly IUserMoviesRepository userMoviesRepository;
-        private readonly IGeminiRecommendationClient geminiRecommendationClient;
         private readonly IUserTvRepository userTvRepository;
         private readonly string tmdbApiKey;
         private readonly ITmdbCacheService tmdbCacheService;
+        private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IRecommendationClientResolver recommendationClientResolver;
 
-        public MediaRecommendationService(ISecretService secretService,
+        public MediaRecommendationService(
+            ISecretService secretService,
             IUserMoviesRepository userMoviesRepository,
-            IGeminiRecommendationClient geminiRecommendationClient,
             IUserTvRepository userTvRepository,
-            ITmdbCacheService tmdbCacheService)
+            ITmdbCacheService tmdbCacheService,
+            IHttpContextAccessor httpContextAccessor,
+            IRecommendationClientResolver recommendationClientResolver)
         {
             this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
-            this.geminiRecommendationClient = geminiRecommendationClient;
             this.userTvRepository = userTvRepository;
             this.tmdbCacheService = tmdbCacheService;
+            this.httpContextAccessor = httpContextAccessor;
+            this.recommendationClientResolver = recommendationClientResolver;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
@@ -60,13 +66,15 @@ namespace MediaVoyager.Services
                 Console.WriteLine($"[MediaRec][Movie] favouriteMovies(count={favouriteMovies.Count}) sample=[{string.Join(", ", favouriteMovies.Take(3))}]...");
                 Console.WriteLine($"[MediaRec][Movie] watchHistory(count={watchHistory.Count}) sample=[{string.Join(", ", watchHistory.Take(3))}]...");
 
-                string movie = await this.geminiRecommendationClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory,1);
-                Console.WriteLine($"[MediaRec][Movie] Gemini recommendation (temp=1): '{movie}'");
+                IRecommendationClient recClient = GetRecommendationClient();
+
+                string movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, 1);
+                Console.WriteLine($"[MediaRec][Movie] Recommendation (temp=1): '{movie}'");
                 if (string.IsNullOrEmpty(movie))
                 {
                     Console.WriteLine("[MediaRec][Movie] Empty recommendation at temp=1, retrying with temp=2");
-                    movie = await this.geminiRecommendationClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory,2);
-                    Console.WriteLine($"[MediaRec][Movie] Gemini recommendation (temp=2): '{movie}'");
+                    movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, 2);
+                    Console.WriteLine($"[MediaRec][Movie] Recommendation (temp=2): '{movie}'");
                 }
                 if (string.IsNullOrEmpty(movie))
                 {
@@ -160,13 +168,15 @@ namespace MediaVoyager.Services
                 Console.WriteLine($"[MediaRec][TV] favouriteTvShows(count={favouriteTvShows.Count}) sample=[{string.Join(", ", favouriteTvShows.Take(3))}]...");
                 Console.WriteLine($"[MediaRec][TV] watchHistory(count={watchHistory.Count}) sample=[{string.Join(", ", watchHistory.Take(3))}]...");
 
-                string tvShow = await this.geminiRecommendationClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory,1);
-                Console.WriteLine($"[MediaRec][TV] Gemini recommendation (temp=1): '{tvShow}'");
+                IRecommendationClient recClient = GetRecommendationClient();
+
+                string tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, 1);
+                Console.WriteLine($"[MediaRec][TV] Recommendation (temp=1): '{tvShow}'");
                 if (string.IsNullOrEmpty(tvShow))
                 {
                     Console.WriteLine("[MediaRec][TV] Empty recommendation at temp=1, retrying with temp=2");
-                    tvShow = await this.geminiRecommendationClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory,2);
-                    Console.WriteLine($"[MediaRec][TV] Gemini recommendation (temp=2): '{tvShow}'");
+                    tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, 2);
+                    Console.WriteLine($"[MediaRec][TV] Recommendation (temp=2): '{tvShow}'");
                 }
                 if (string.IsNullOrEmpty(tvShow))
                 {
@@ -236,6 +246,21 @@ namespace MediaVoyager.Services
             {
                 Console.WriteLine($"[MediaRec][TV] End GetTvShowRecommendationForUser userId={userId}");
             }
+        }
+
+        private IRecommendationClient GetRecommendationClient()
+        {
+            // Default to Gemini when header is missing/invalid.
+            RecommendationProvider provider = RecommendationProvider.Gemini;
+            string? headerValue = this.httpContextAccessor.HttpContext?.Request?.Headers[ProviderHeaderName].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(headerValue)
+                && Enum.TryParse(headerValue, ignoreCase: true, out RecommendationProvider parsed))
+            {
+                provider = parsed;
+            }
+
+            Console.WriteLine($"[MediaRec] Using recommendation provider: {provider}");
+            return this.recommendationClientResolver.Resolve(provider);
         }
 
         private string ConvertToEasyName(Movie movie)
