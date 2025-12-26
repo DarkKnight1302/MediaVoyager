@@ -204,7 +204,7 @@ background: rgba(0, 0, 0, 0.3);
             <button id="providerGroq" type="button">Use Groq</button>
         </div>
         <div class="provider-hint">
-            Current provider is saved in this browser and sent as header <code>x-recommendation-provider</code>.
+            Provider selection is stored on the server. Click a button to switch the recommendation engine.
         </div>
 
    <div class="links">
@@ -250,36 +250,48 @@ background: rgba(0, 0, 0, 0.3);
 
     <script>
         (function () {
-            const STORAGE_KEY = 'mediaVoyager.recommendationProvider';
             const btnGemini = document.getElementById('providerGemini');
             const btnGroq = document.getElementById('providerGroq');
 
-            function normalize(value) {
-                if (!value) return 'Gemini';
-                return (value.toLowerCase() === 'groq') ? 'Groq' : 'Gemini';
-            }
-
             function setActive(provider) {
-                const p = normalize(provider);
+                const p = (provider && provider.toLowerCase() === 'groq') ? 'Groq' : 'Gemini';
                 btnGemini.classList.toggle('active', p === 'Gemini');
                 btnGroq.classList.toggle('active', p === 'Groq');
             }
 
-            function save(provider) {
-                localStorage.setItem(STORAGE_KEY, normalize(provider));
-                setActive(provider);
+            async function switchProvider(provider) {
+                try {
+                    const response = await fetch(`/api/provider/${provider}`, { method: 'POST' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setActive(data.provider);
+                        console.log(`Switched to ${data.provider}`);
+                    } else {
+                        console.error('Failed to switch provider');
+                    }
+                } catch (error) {
+                    console.error('Error switching provider:', error);
+                }
             }
 
-            // Initialize
-            setActive(localStorage.getItem(STORAGE_KEY) || 'Gemini');
+            async function loadCurrentProvider() {
+                try {
+                    const response = await fetch('/api/provider');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setActive(data.provider);
+                    }
+                } catch (error) {
+                    console.error('Error loading provider:', error);
+                    setActive('Gemini');
+                }
+            }
 
-            btnGemini.addEventListener('click', () => save('Gemini'));
-            btnGroq.addEventListener('click', () => save('Groq'));
+            // Initialize by loading current provider from server
+            loadCurrentProvider();
 
-            // Optional helper for future UI pages making API calls:
-            window.mediaVoyagerGetRecommendationProviderHeader = function () {
-                return { 'x-recommendation-provider': normalize(localStorage.getItem(STORAGE_KEY)) };
-            };
+            btnGemini.addEventListener('click', () => switchProvider('gemini'));
+            btnGroq.addEventListener('click', () => switchProvider('groq'));
         })();
     </script>
 </body>

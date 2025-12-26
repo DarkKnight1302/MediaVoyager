@@ -54,6 +54,7 @@ builder.Host.ConfigureHostOptions(options =>
 builder.Services.AddSingleton<IGeminiRecommendationClient, GeminiRecommendationClient>();
 builder.Services.AddSingleton<IGroqRecommendationClient, GroqRecommendationClient>();
 builder.Services.AddSingleton<MediaVoyager.Services.Interfaces.IRecommendationClientResolver, RecommendationClientResolver>();
+builder.Services.AddSingleton<IRecommendationProviderService, RecommendationProviderService>();
 builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationService>();

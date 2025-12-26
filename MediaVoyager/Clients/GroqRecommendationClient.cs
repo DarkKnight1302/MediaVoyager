@@ -275,11 +275,10 @@ namespace MediaVoyager.Clients
 
             [JsonPropertyName("stream")] public bool Stream { get; set; } = false;
 
+            [JsonPropertyName("include_reasoning")] public bool IncludeReasoning { get; set; } = false;
+
             // Groq supports null stop; model it explicitly.
             [JsonPropertyName("stop")] public object Stop { get; set; }
-
-            // Optional, included in the sample request. Kept nullable so it won't be sent unless set.
-            [JsonPropertyName("reasoning_effort")] public string ReasoningEffort { get; set; }
         }
 
         private class ChatMessage

@@ -17,29 +17,27 @@ namespace MediaVoyager.Services
 {
     public class MediaRecommendationService : IMediaRecommendationService
     {
-        private const string ProviderHeaderName = "x-recommendation-provider";
-
         private readonly IUserMoviesRepository userMoviesRepository;
         private readonly IUserTvRepository userTvRepository;
         private readonly string tmdbApiKey;
         private readonly ITmdbCacheService tmdbCacheService;
-        private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IRecommendationClientResolver recommendationClientResolver;
+        private readonly IRecommendationProviderService recommendationProviderService;
 
         public MediaRecommendationService(
             ISecretService secretService,
             IUserMoviesRepository userMoviesRepository,
             IUserTvRepository userTvRepository,
             ITmdbCacheService tmdbCacheService,
-            IHttpContextAccessor httpContextAccessor,
-            IRecommendationClientResolver recommendationClientResolver)
+            IRecommendationClientResolver recommendationClientResolver,
+            IRecommendationProviderService recommendationProviderService)
         {
             this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
             this.userTvRepository = userTvRepository;
             this.tmdbCacheService = tmdbCacheService;
-            this.httpContextAccessor = httpContextAccessor;
             this.recommendationClientResolver = recommendationClientResolver;
+            this.recommendationProviderService = recommendationProviderService;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
@@ -250,15 +248,8 @@ namespace MediaVoyager.Services
 
         private IRecommendationClient GetRecommendationClient()
         {
-            // Default to Gemini when header is missing/invalid.
-            RecommendationProvider provider = RecommendationProvider.Gemini;
-            string? headerValue = this.httpContextAccessor.HttpContext?.Request?.Headers[ProviderHeaderName].FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(headerValue)
-                && Enum.TryParse(headerValue, ignoreCase: true, out RecommendationProvider parsed))
-            {
-                provider = parsed;
-            }
-
+            // Get provider from the in-memory provider service
+            RecommendationProvider provider = this.recommendationProviderService.CurrentProvider;
             Console.WriteLine($"[MediaRec] Using recommendation provider: {provider}");
             return this.recommendationClientResolver.Resolve(provider);
         }
