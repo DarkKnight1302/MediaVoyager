@@ -214,6 +214,7 @@ namespace MediaVoyager.Clients
                 TopP = 1,
                 Stream = false,
                 Stop = null,
+                ReasoningEffort = "high",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -241,6 +242,7 @@ namespace MediaVoyager.Clients
                 TopP = 1,
                 Stream = false,
                 Stop = null,
+                ReasoningEffort = "high",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -276,6 +278,8 @@ namespace MediaVoyager.Clients
             [JsonPropertyName("stream")] public bool Stream { get; set; } = false;
 
             [JsonPropertyName("include_reasoning")] public bool IncludeReasoning { get; set; } = false;
+
+            [JsonPropertyName("reasoning_effort")] public string ReasoningEffort { get; set; } = "high";
 
             // Groq supports null stop; model it explicitly.
             [JsonPropertyName("stop")] public object Stop { get; set; }

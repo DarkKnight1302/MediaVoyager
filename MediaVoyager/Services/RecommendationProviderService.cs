@@ -8,7 +8,7 @@ namespace MediaVoyager.Services
     /// </summary>
     public sealed class RecommendationProviderService : IRecommendationProviderService
     {
-        private RecommendationProvider _currentProvider = RecommendationProvider.Gemini;
+        private RecommendationProvider _currentProvider = RecommendationProvider.Groq;
         private readonly object _lock = new();
 
         public RecommendationProvider CurrentProvider
