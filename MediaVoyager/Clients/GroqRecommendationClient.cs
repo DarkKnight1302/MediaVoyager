@@ -21,7 +21,6 @@ namespace MediaVoyager.Clients
     public class GroqRecommendationClient : IDisposable, IGroqRecommendationClient, IRecommendationClient
     {
         private readonly HttpClient _httpClient;
-        private readonly ILogger logger;
 
         // --- Rate Limiting State ---
         private static readonly int MaxRequests = 9;
@@ -37,9 +36,15 @@ namespace MediaVoyager.Clients
         private const string GroqChatCompletionsUrl = "https://api.groq.com/openai/v1/chat/completions";
         private const string DefaultModel = "openai/gpt-oss-120b";
 
+        // --- Retry ---
+        private const int MaxRetryAttempts = 3;
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan TooManyRequestsRetryDelay = TimeSpan.FromSeconds(4);
+
         public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger)
         {
-            this.logger = logger;
+            // logger parameter is kept to preserve constructor signature used by DI,
+            // but this client now logs via Console.WriteLine.
 
             string groqApiKey = secretService.GetSecretValue("groq_api_key");
             _httpClient = new HttpClient();
@@ -49,97 +54,121 @@ namespace MediaVoyager.Clients
 
         public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, int temperature = 1)
         {
-            await WaitForRateLimitSlotAsync();
-
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Groq][Movie] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
-
-            var requestBody = BuildGroqRequestForMovies(favoriteMovies, watchHistory, temperature);
-            var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            });
-
-            var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
-            {
-                Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
-            };
-
-            try
-            {
-                var response = await _httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-
-                var responseBody = await response.Content.ReadAsStringAsync();
-                var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
-
-                return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
-            }
-            catch (HttpRequestException ex)
-            {
-                if (ex.StatusCode == HttpStatusCode.TooManyRequests)
+            return await ExecuteWithRetryAsync(
+                operationName: "[Groq][Movie]",
+                operation: async () =>
                 {
-                    throw;
-                }
+                    await WaitForRateLimitSlotAsync();
 
-                this.logger.LogError($"[Groq][Movie] Error calling Groq API: {ex.Message}");
-            }
-            catch (JsonException ex)
-            {
-                this.logger.LogError($"[Groq][Movie] Error parsing Groq API response: {ex.Message}");
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError($"[Groq][Movie] Exception in movie recommendation : {e.Message} \n {e.StackTrace}", e);
-            }
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Groq][Movie] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
 
-            return string.Empty;
+                    var requestBody = BuildGroqRequestForMovies(favoriteMovies, watchHistory, temperature);
+                    var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    });
+
+                    using var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
+                    {
+                        Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+                    };
+
+                    var response = await _httpClient.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
+
+                    return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
+                });
         }
 
         public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, int temperature)
         {
-            await WaitForRateLimitSlotAsync();
-
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Groq][TV] Sending request for favorites: {string.Join(", ", favouriteTvShows.Take(2))}...");
-
-            var requestBody = BuildGroqRequestForTvShows(favouriteTvShows, watchHistory, temperature);
-            var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            });
-
-            var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
-            {
-                Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
-            };
-
-            try
-            {
-                var response = await _httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-
-                var responseBody = await response.Content.ReadAsStringAsync();
-                var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
-
-                return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
-            }
-            catch (HttpRequestException ex)
-            {
-                if (ex.StatusCode == HttpStatusCode.TooManyRequests)
+            return await ExecuteWithRetryAsync(
+                operationName: "[Groq][TV]",
+                operation: async () =>
                 {
-                    throw;
-                }
+                    await WaitForRateLimitSlotAsync();
 
-                this.logger.LogError($"[Groq][TV] Error calling Groq API: {ex.Message}");
-            }
-            catch (JsonException ex)
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Groq][TV] Sending request for favorites: {string.Join(", ", favouriteTvShows.Take(2))}...");
+
+                    var requestBody = BuildGroqRequestForTvShows(favouriteTvShows, watchHistory, temperature);
+                    var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    });
+
+                    using var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
+                    {
+                        Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+                    };
+
+                    var response = await _httpClient.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
+
+                    return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
+                });
+        }
+
+        private async Task<string> ExecuteWithRetryAsync(string operationName, Func<Task<string>> operation)
+        {
+            for (int attempt = 1; attempt <= MaxRetryAttempts; attempt++)
             {
-                this.logger.LogError($"[Groq][TV] Error parsing Groq API response: {ex.Message}");
-            }
-            catch (Exception e)
-            {
-                this.logger.LogError($"[Groq][TV] Exception in tv show recommendation : {e.Message} \n {e.StackTrace}", e);
+                try
+                {
+                    return await operation();
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Rate limited (HTTP 429) (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
+
+                    if (attempt == MaxRetryAttempts)
+                    {
+                        // Bubble up after final attempt so callers can differentiate 429 from other failures.
+                        throw;
+                    }
+
+                    await Task.Delay(TooManyRequestsRetryDelay);
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Error parsing Groq API response (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
+
+                    if (attempt == MaxRetryAttempts)
+                    {
+                        return string.Empty;
+                    }
+
+                    await Task.Delay(RetryDelay);
+                }
+                catch (HttpRequestException ex)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Error calling Groq API (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
+
+                    if (attempt == MaxRetryAttempts)
+                    {
+                        return string.Empty;
+                    }
+
+                    await Task.Delay(RetryDelay);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Exception in recommendation (attempt {attempt}/{MaxRetryAttempts}): {e.Message}\n{e.StackTrace}");
+
+                    if (attempt == MaxRetryAttempts)
+                    {
+                        return string.Empty;
+                    }
+
+                    await Task.Delay(RetryDelay);
+                }
             }
 
             return string.Empty;
