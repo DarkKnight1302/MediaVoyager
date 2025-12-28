@@ -19,5 +19,7 @@ namespace MediaVoyager.Models
         public string TagLine { get; set; }
 
         public string OverView { get; set; }
+
+        public string ImdbRating { get; set; }
     }
 }

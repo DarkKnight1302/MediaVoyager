@@ -23,6 +23,7 @@ namespace MediaVoyager.Services
         private readonly ITmdbCacheService tmdbCacheService;
         private readonly IRecommendationClientResolver recommendationClientResolver;
         private readonly IRecommendationProviderService recommendationProviderService;
+        private readonly IOmdbClient omdbClient;
 
         public MediaRecommendationService(
             ISecretService secretService,
@@ -30,7 +31,8 @@ namespace MediaVoyager.Services
             IUserTvRepository userTvRepository,
             ITmdbCacheService tmdbCacheService,
             IRecommendationClientResolver recommendationClientResolver,
-            IRecommendationProviderService recommendationProviderService)
+            IRecommendationProviderService recommendationProviderService,
+            IOmdbClient omdbClient)
         {
             this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
@@ -38,6 +40,7 @@ namespace MediaVoyager.Services
             this.tmdbCacheService = tmdbCacheService;
             this.recommendationClientResolver = recommendationClientResolver;
             this.recommendationProviderService = recommendationProviderService;
+            this.omdbClient = omdbClient;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
@@ -118,7 +121,8 @@ namespace MediaVoyager.Services
                             OverView = movieTmdb.Overview,
                             ReleaseDate = movieTmdb.ReleaseDate,
                             TagLine = movieTmdb.Tagline,
-                            Title = movieTmdb.Title
+                            Title = movieTmdb.Title,
+                            ImdbRating = await this.omdbClient.TryGetImdbRatingAsync(movieTmdb.ImdbId).ConfigureAwait(false)
                         };
                         Console.WriteLine($"[MediaRec][Movie] Returning response Id={movieResponse.Id} Title='{movieResponse.Title}' Poster='{movieResponse.Poster}'");
                         return movieResponse;
