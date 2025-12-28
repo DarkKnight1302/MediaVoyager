@@ -27,6 +27,7 @@ MediaVoyager is an intelligent recommendation engine that provides personalized 
 - **👤 User Management** - Secure user authentication with Google Sign-In support
 - **📋 Watchlist Management** - Maintain separate watchlists for movies and TV shows
 - **📊 Watch History Tracking** - Track what you've watched to avoid duplicate recommendations
+- **⭐ IMDb Ratings** - Displays IMDb ratings for movies
 - **⚡ Smart Caching** - Efficient caching system for movies and TV shows data
 - **🔒 Secure Authentication** - JWT-based authentication and authorization
 - **🚦 Rate Limiting** - Built-in rate limiting to ensure service stability
@@ -41,6 +42,7 @@ MediaVoyager is an intelligent recommendation engine that provides personalized 
 | **Language** | C# |
 | **AI Engine** | Google Gemini 2.5 Flash |
 | **Movie Database** | TMDb (The Movie Database) |
+| **Ratings** | IMDb (via OMDb API) |
 | **Cloud Platform** | Azure Container Apps |
 | **Database** | Azure Cosmos DB |
 
