@@ -227,6 +227,7 @@ namespace MediaVoyager.Services
                             Title = tvShowTmdb.Name,
                             OriginalName = tvShowTmdb.OriginalName,
                             NumberOfSeasons = tvShowTmdb.NumberOfSeasons,
+                            ImdbRating = await this.omdbClient.TryGetImdbRatingAsync(tvShowTmdb?.ExternalIds?.ImdbId).ConfigureAwait(false)
                         };
                         Console.WriteLine($"[MediaRec][TV] Returning response Id={tvShowResponse.Id} Title='{tvShowResponse.Title}' Poster='{tvShowResponse.Poster}'");
                         return tvShowResponse;
