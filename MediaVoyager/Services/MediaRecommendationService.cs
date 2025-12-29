@@ -208,13 +208,27 @@ namespace MediaVoyager.Services
                 {
                     int tvShowId = results[0].Id;
                     Console.WriteLine($"[MediaRec][TV] Using top result tvShowId={tvShowId}");
-                    TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await this.tmdbCacheService.GetTvShowAsync(tvShowId);
+                    Task<TMDbLib.Objects.TvShows.TvShow> tvShowTask = this.tmdbCacheService.GetTvShowAsync(tvShowId);
+                    Task<ExternalIdsTvShow> externalIdsTask = tmdbClient.GetTvShowExternalIdsAsync(tvShowId);
+
+                    await Task.WhenAll(tvShowTask, externalIdsTask).ConfigureAwait(false);
+
+                    TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await tvShowTask.ConfigureAwait(false);
+                    ExternalIdsTvShow externalIds = await externalIdsTask.ConfigureAwait(false);
+
                     Console.WriteLine(tvShowTmdb == null
                         ? "[MediaRec][TV] tmdbCacheService returned null for TV show"
                         : $"[MediaRec][TV] Loaded TV details: name='{tvShowTmdb.Name}', firstAirDate={tvShowTmdb.FirstAirDate}, genres={(tvShowTmdb.Genres == null ?0 : tvShowTmdb.Genres.Count)}");
 
+                    string imdbId = externalIds?.ImdbId;
+                    Console.WriteLine(string.IsNullOrWhiteSpace(imdbId)
+                        ? "[MediaRec][TV] External IDs did not contain an IMDb id"
+                        : $"[MediaRec][TV] External IDs imdbId='{imdbId}'");
+
                     if (tvShowTmdb != null)
                     {
+                        Task<string> imdbRatingTask = this.omdbClient.TryGetImdbRatingAsync(imdbId);
+
                         TvShowResponse tvShowResponse = new TvShowResponse()
                         {
                             Id = tvShowId.ToString(),
@@ -227,7 +241,7 @@ namespace MediaVoyager.Services
                             Title = tvShowTmdb.Name,
                             OriginalName = tvShowTmdb.OriginalName,
                             NumberOfSeasons = tvShowTmdb.NumberOfSeasons,
-                            ImdbRating = await this.omdbClient.TryGetImdbRatingAsync(tvShowTmdb?.ExternalIds?.ImdbId).ConfigureAwait(false)
+                            ImdbRating = await imdbRatingTask.ConfigureAwait(false)
                         };
                         Console.WriteLine($"[MediaRec][TV] Returning response Id={tvShowResponse.Id} Title='{tvShowResponse.Title}' Poster='{tvShowResponse.Poster}'");
                         return tvShowResponse;
