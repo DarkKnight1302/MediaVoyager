@@ -72,6 +72,9 @@ builder.Services.AddSingleton<ITmdbCacheService, TmdbCacheService>();
 builder.Services.AddSingleton<IUserActivityRepository, UserActivityRepository>();
 builder.Services.AddSingleton<IDashboardService, DashboardService>();
 
+// Error notification service
+builder.Services.AddSingleton<IErrorNotificationService, ErrorNotificationService>();
+
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();
 
