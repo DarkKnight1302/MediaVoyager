@@ -105,8 +105,19 @@ namespace MediaVoyager.Services
 
                 if (results != null && results.Count >0)
                 {
-                    int movieId = results[0].Id;
-                    Console.WriteLine($"[MediaRec][Movie] Using top result movieId={movieId}");
+                    // Compare top two results for popularity and use the more popular one
+                    SearchMovie selectedMovie = results[0];
+                    if (results.Count > 1 && results[1].Popularity > results[0].Popularity)
+                    {
+                        selectedMovie = results[1];
+                        Console.WriteLine($"[MediaRec][Movie] Selected second result (more popular): movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity} vs first result popularity={results[0].Popularity}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[MediaRec][Movie] Using top result movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity}");
+                    }
+
+                    int movieId = selectedMovie.Id;
                     TMDbLib.Objects.Movies.Movie movieTmdb = await this.tmdbCacheService.GetMovieAsync(movieId);
                     Console.WriteLine(movieTmdb == null
                         ? "[MediaRec][Movie] tmdbCacheService returned null for movie"
@@ -210,7 +221,19 @@ namespace MediaVoyager.Services
 
                 if (results != null && results.Count >0)
                 {
-                    int tvShowId = results[0].Id;
+                    // Compare top two results for popularity and use the more popular one
+                    SearchTv selectedTvShow = results[0];
+                    if (results.Count > 1 && results[1].Popularity > results[0].Popularity)
+                    {
+                        selectedTvShow = results[1];
+                        Console.WriteLine($"[MediaRec][TV] Selected second result (more popular): tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity} vs first result popularity={results[0].Popularity}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[MediaRec][TV] Using top result tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity}");
+                    }
+
+                    int tvShowId = selectedTvShow.Id;
                     Console.WriteLine($"[MediaRec][TV] Using top result tvShowId={tvShowId}");
                     Task<TMDbLib.Objects.TvShows.TvShow> tvShowTask = this.tmdbCacheService.GetTvShowAsync(tvShowId);
                     Task<ExternalIdsTvShow> externalIdsTask = tmdbClient.GetTvShowExternalIdsAsync(tvShowId);
