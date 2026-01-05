@@ -49,7 +49,7 @@ namespace MediaVoyager.Controllers
             {
                 return NotFound();
             }
-            return Ok(movies.Results);
+            return Ok(movies.Results.OrderByDescending(m => m.Popularity).ToList());
         }
 
         [Authorize]
@@ -76,7 +76,7 @@ namespace MediaVoyager.Controllers
             {
                 return NotFound();
             }
-            return Ok(tvShows.Results);
+            return Ok(tvShows.Results.OrderByDescending(t => t.Popularity).ToList());
         }
     }
 }
