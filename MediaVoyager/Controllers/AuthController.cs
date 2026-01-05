@@ -28,7 +28,7 @@ namespace MediaVoyager.Controllers
             }
 
             bool isValid = _tokenService.IsValidAuth(userId, HttpContext, GlobalConstant.Issuer);
-            return Ok(false);
+            return Ok(isValid);
         }
     }
 }
