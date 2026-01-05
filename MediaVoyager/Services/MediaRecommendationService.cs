@@ -86,6 +86,7 @@ namespace MediaVoyager.Services
                 string[] movieParts = movie.Split('\n');
                 string name = movieParts[0];
                 int year = int.Parse(movieParts[1]);
+                name = name.Trim();
                 Console.WriteLine($"[MediaRec][Movie] Parsed recommendation name='{name}', year={year}");
 
                 Console.WriteLine($"[MediaRec][Movie] Searching TMDb for movie name='{name}', year={year}");
@@ -189,6 +190,7 @@ namespace MediaVoyager.Services
                 string[] tvShowParts = tvShow.Split('\n');
                 string name = tvShowParts[0];
                 int year = int.Parse(tvShowParts[1]);
+                name = name.Trim();
                 Console.WriteLine($"[MediaRec][TV] Parsed recommendation name='{name}', year={year}");
 
                 Console.WriteLine($"[MediaRec][TV] Searching TMDb for TV show name='{name}', year={year}");
