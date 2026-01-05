@@ -37,9 +37,9 @@ namespace MediaVoyager.Clients
         private const string DefaultModel = "openai/gpt-oss-120b";
 
         // --- Retry ---
-        private const int MaxRetryAttempts = 3;
-        private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
-        private static readonly TimeSpan TooManyRequestsRetryDelay = TimeSpan.FromSeconds(4);
+        private const int MaxRetryAttempts = 5;
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan TooManyRequestsRetryDelay = TimeSpan.FromSeconds(6);
 
         public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger)
         {
