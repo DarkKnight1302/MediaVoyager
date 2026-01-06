@@ -239,10 +239,8 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
-                MaxCompletionTokens = 8192,
                 TopP = 1,
                 Stream = false,
-                Stop = null,
                 ReasoningEffort = "high",
                 Messages = new List<ChatMessage>
                 {
@@ -267,10 +265,8 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
-                MaxCompletionTokens = 8192,
                 TopP = 1,
                 Stream = false,
-                Stop = null,
                 ReasoningEffort = "high",
                 Messages = new List<ChatMessage>
                 {
@@ -300,8 +296,6 @@ namespace MediaVoyager.Clients
 
             [JsonPropertyName("temperature")] public int Temperature { get; set; } = 1;
 
-            [JsonPropertyName("max_completion_tokens")] public int MaxCompletionTokens { get; set; } = 8192;
-
             [JsonPropertyName("top_p")] public int TopP { get; set; } = 1;
 
             [JsonPropertyName("stream")] public bool Stream { get; set; } = false;
@@ -310,8 +304,6 @@ namespace MediaVoyager.Clients
 
             [JsonPropertyName("reasoning_effort")] public string ReasoningEffort { get; set; } = "high";
 
-            // Groq supports null stop; model it explicitly.
-            [JsonPropertyName("stop")] public object Stop { get; set; }
         }
 
         private class ChatMessage
