@@ -69,17 +69,21 @@ namespace MediaVoyager.Services
 
                 IRecommendationClient recClient = GetRecommendationClient();
 
-                string movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, 1);
-                Console.WriteLine($"[MediaRec][Movie] Recommendation (temp=1): '{movie}'");
-                if (string.IsNullOrEmpty(movie))
+                string movie = null;
+                for (double temperature = 0.8; temperature <= 2.0; temperature += 0.2)
                 {
-                    Console.WriteLine("[MediaRec][Movie] Empty recommendation at temp=1, retrying with temp=2");
-                    movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, 2);
-                    Console.WriteLine($"[MediaRec][Movie] Recommendation (temp=2): '{movie}'");
+                    movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, temperature);
+                    Console.WriteLine($"[MediaRec][Movie] Recommendation (temp={temperature:F1}): '{movie}'");
+                    if (!string.IsNullOrEmpty(movie))
+                    {
+                        break;
+                    }
+                    Console.WriteLine($"[MediaRec][Movie] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
                 }
+
                 if (string.IsNullOrEmpty(movie))
                 {
-                    Console.WriteLine("[MediaRec][Movie] Returning null because recommendation is empty after retries");
+                    Console.WriteLine("[MediaRec][Movie] Returning null because recommendation is empty after all retries");
                     return null;
                 }
 
@@ -185,17 +189,21 @@ namespace MediaVoyager.Services
 
                 IRecommendationClient recClient = GetRecommendationClient();
 
-                string tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, 1);
-                Console.WriteLine($"[MediaRec][TV] Recommendation (temp=1): '{tvShow}'");
-                if (string.IsNullOrEmpty(tvShow))
+                string tvShow = null;
+                for (double temperature = 0.8; temperature <= 2.0; temperature += 0.2)
                 {
-                    Console.WriteLine("[MediaRec][TV] Empty recommendation at temp=1, retrying with temp=2");
-                    tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, 2);
-                    Console.WriteLine($"[MediaRec][TV] Recommendation (temp=2): '{tvShow}'");
+                    tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, temperature);
+                    Console.WriteLine($"[MediaRec][TV] Recommendation (temp={temperature:F1}): '{tvShow}'");
+                    if (!string.IsNullOrEmpty(tvShow))
+                    {
+                        break;
+                    }
+                    Console.WriteLine($"[MediaRec][TV] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
                 }
+
                 if (string.IsNullOrEmpty(tvShow))
                 {
-                    Console.WriteLine("[MediaRec][TV] Returning null because recommendation is empty after retries");
+                    Console.WriteLine("[MediaRec][TV] Returning null because recommendation is empty after all retries");
                     return null;
                 }
 

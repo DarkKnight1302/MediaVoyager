@@ -52,7 +52,7 @@ namespace MediaVoyager.Clients
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", groqApiKey);
         }
 
-        public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, int temperature = 1)
+        public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
         {
             return await ExecuteWithRetryAsync(
                 operationName: "[Groq][Movie]",
@@ -84,7 +84,7 @@ namespace MediaVoyager.Clients
                 });
         }
 
-        public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, int temperature)
+        public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, double temperature)
         {
             return await ExecuteWithRetryAsync(
                 operationName: "[Groq][TV]",
@@ -228,7 +228,7 @@ namespace MediaVoyager.Clients
             }
         }
 
-        private ChatCompletionsRequest BuildGroqRequestForMovies(List<string> favoriteMovies, List<string> watchHistory, int temperature)
+        private ChatCompletionsRequest BuildGroqRequestForMovies(List<string> favoriteMovies, List<string> watchHistory, double temperature)
         {
             Func<List<string>, string> formatList = items => $"[`{string.Join("`, `", items.Select(m => m.Replace("`", "\\`")))}`]";
 
@@ -254,7 +254,7 @@ namespace MediaVoyager.Clients
             };
         }
 
-        private ChatCompletionsRequest BuildGroqRequestForTvShows(List<string> favouriteTvShows, List<string> watchHistory, int temperature)
+        private ChatCompletionsRequest BuildGroqRequestForTvShows(List<string> favouriteTvShows, List<string> watchHistory, double temperature)
         {
             Func<List<string>, string> formatList = items => $"[`{string.Join("`, `", items.Select(m => m.Replace("`", "\\`")))}`]";
 
@@ -294,7 +294,7 @@ namespace MediaVoyager.Clients
             [JsonPropertyName("messages")] public List<ChatMessage> Messages { get; set; }
             [JsonPropertyName("model")] public string Model { get; set; }
 
-            [JsonPropertyName("temperature")] public int Temperature { get; set; } = 1;
+            [JsonPropertyName("temperature")] public double Temperature { get; set; } = 1;
 
             [JsonPropertyName("top_p")] public int TopP { get; set; } = 1;
 

@@ -61,7 +61,7 @@
         /// <param name="favoriteMovies">A list of the user's favorite movies.</param>
         /// <param name="watchHistory">A list of movies the user has already watched.</param>
         /// <returns>The name of the recommended movie as a string.</returns>
-        public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, int temperature = 1)
+        public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
         {
             // 1. Wait for a slot in the rate limit window before proceeding.
             await WaitForRateLimitSlotAsync();
@@ -189,7 +189,7 @@
         /// <summary>
         /// Builds the request body for the Gemini API call.
         /// </summary>
-        private GeminiRequest BuildGeminiRequest(List<string> favoriteMovies, List<string> watchHistory, int temperature)
+        private GeminiRequest BuildGeminiRequest(List<string> favoriteMovies, List<string> watchHistory, double temperature)
         {
             // Helper function to format a list of movies into a string like "['Movie1', 'Movie2']"
             Func<List<string>, string> formatMovieList = movies => $"[`{string.Join("`, `", movies.Select(m => m.Replace("`", "\\`")))}`]";
@@ -221,7 +221,7 @@
         /// <summary>
         /// Builds the request body for the Gemini API call.
         /// </summary>
-        private GeminiRequest BuildGeminiRequestForTvShows(List<string> favouriteTvShows, List<string> watchHistory, int temperature)
+        private GeminiRequest BuildGeminiRequestForTvShows(List<string> favouriteTvShows, List<string> watchHistory, double temperature)
         {
             // Helper function to format a list of movies into a string like "['Movie1', 'Movie2']"
             Func<List<string>, string> formatMovieList = movies => $"[`{string.Join("`, `", movies.Select(m => m.Replace("`", "\\`")))}`]";
@@ -260,7 +260,7 @@
             GC.SuppressFinalize(this);
         }
 
-        public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, int temperature)
+        public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, double temperature)
         {
             // 1. Wait for a slot in the rate limit window before proceeding.
             await WaitForRateLimitSlotAsync();
@@ -335,7 +335,7 @@
 
         private class GenerationConfig
         {
-            public int temperature { get; set; } = 1;
+            public double temperature { get; set; } = 1;
         }
 
         private class SystemInstruction
