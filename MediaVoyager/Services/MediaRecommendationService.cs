@@ -70,7 +70,7 @@ namespace MediaVoyager.Services
                 IRecommendationClient recClient = GetRecommendationClient();
 
                 string movie = null;
-                for (double temperature = 0.8; temperature <= 2.0; temperature += 0.2)
+                for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
                 {
                     movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, temperature);
                     Console.WriteLine($"[MediaRec][Movie] Recommendation (temp={temperature:F1}): '{movie}'");
@@ -190,7 +190,7 @@ namespace MediaVoyager.Services
                 IRecommendationClient recClient = GetRecommendationClient();
 
                 string tvShow = null;
-                for (double temperature = 0.8; temperature <= 2.0; temperature += 0.2)
+                for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
                 {
                     tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, temperature);
                     Console.WriteLine($"[MediaRec][TV] Recommendation (temp={temperature:F1}): '{tvShow}'");
