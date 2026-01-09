@@ -14,17 +14,23 @@ namespace MediaVoyager.Services
         private readonly IUserTvRepository userTvRepository;
         private readonly IUserRepository userRepository;
         private readonly ITmdbCacheService tmdbCacheService;
+        private readonly IUserMovieHistoryRepository userMovieHistoryRepository;
+        private readonly IUserTvHistoryRepository userTvHistoryRepository;
 
         public UserMediaService(IUserMoviesRepository userMoviesRepository, 
                                IUserTvRepository userTvRepository,
                                IUserRepository userRepository,
                                ISecretService secretService,
-                               ITmdbCacheService tmdbCacheService)
+                               ITmdbCacheService tmdbCacheService,
+                               IUserMovieHistoryRepository userMovieHistoryRepository,
+                               IUserTvHistoryRepository userTvHistoryRepository)
         {
             this.userMoviesRepository = userMoviesRepository;
             this.userTvRepository = userTvRepository;
             this.userRepository = userRepository;
             this.tmdbCacheService = tmdbCacheService;
+            this.userMovieHistoryRepository = userMovieHistoryRepository;
+            this.userTvHistoryRepository = userTvHistoryRepository;
         }
 
         public async Task AddMoviesToFavourites(string userId, List<SearchMovie> movies)
@@ -89,6 +95,38 @@ namespace MediaVoyager.Services
 
         public async Task RemoveMoviesFromWatchlist(string userId, List<string> movieIds)
         {
+            // Fetch movie details before removing from watchlist to add to history
+            var moviesToMoveToHistory = new List<Movie>();
+            foreach (var movieId in movieIds)
+            {
+                try
+                {
+                    var movie = await this.tmdbCacheService.GetMovieAsync(int.Parse(movieId));
+                    if (movie != null)
+                    {
+                        moviesToMoveToHistory.Add(new Movie
+                        {
+                            Id = movie.Id.ToString(),
+                            Title = movie.Title,
+                            ReleaseDate = movie.ReleaseDate,
+                            Poster = movie.PosterPath,
+                            Overview = movie.Overview
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error fetching movie {movieId} for history: {ex.Message}");
+                }
+            }
+
+            // Add to history
+            if (moviesToMoveToHistory.Count > 0)
+            {
+                await this.userMovieHistoryRepository.AddToHistory(userId, moviesToMoveToHistory);
+            }
+
+            // Remove from watchlist
             await this.userRepository.RemoveMoviesFromWatchlist(userId, movieIds);
         }
 
@@ -99,6 +137,38 @@ namespace MediaVoyager.Services
 
         public async Task RemoveTvShowsFromWatchlist(string userId, List<string> tvIds)
         {
+            // Fetch TV show details before removing from watchlist to add to history
+            var tvShowsToMoveToHistory = new List<TvShow>();
+            foreach (var tvId in tvIds)
+            {
+                try
+                {
+                    var tvShow = await this.tmdbCacheService.GetTvShowAsync(int.Parse(tvId));
+                    if (tvShow != null)
+                    {
+                        tvShowsToMoveToHistory.Add(new TvShow
+                        {
+                            Id = tvShow.Id.ToString(),
+                            Title = tvShow.Name,
+                            FirstAirDate = tvShow.FirstAirDate,
+                            Poster = tvShow.PosterPath,
+                            Overview = tvShow.Overview
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error fetching TV show {tvId} for history: {ex.Message}");
+                }
+            }
+
+            // Add to history
+            if (tvShowsToMoveToHistory.Count > 0)
+            {
+                await this.userTvHistoryRepository.AddToHistory(userId, tvShowsToMoveToHistory);
+            }
+
+            // Remove from watchlist
             await this.userRepository.RemoveTvShowsFromWatchlist(userId, tvIds);
         }
 
@@ -268,6 +338,77 @@ namespace MediaVoyager.Services
                     {
                         // Log error and continue
                         Console.WriteLine($"Error fetching TV show {favouriteTv.Id}: {ex.Message}");
+                    }
+                    return null;
+                });
+
+                var tvShows = await Task.WhenAll(tvTasks);
+                response.tvShows = tvShows.Where(tv => tv != null).ToList();
+            }
+
+            return response;
+        }
+
+        public async Task<HistoryResponse> GetUserHistory(string userId)
+        {
+            var response = new HistoryResponse();
+
+            // Get movie history
+            var movieHistory = await this.userMovieHistoryRepository.GetUserMovieHistory(userId);
+            if (movieHistory?.movies?.Any() == true)
+            {
+                var movieTasks = movieHistory.movies.Select(async historyMovie =>
+                {
+                    try
+                    {
+                        var movie = await this.tmdbCacheService.GetMovieAsync(int.Parse(historyMovie.Id));
+                        if (movie != null)
+                        {
+                            return new Movie
+                            {
+                                Id = movie.Id.ToString(),
+                                Title = movie.Title,
+                                ReleaseDate = movie.ReleaseDate,
+                                Poster = movie.PosterPath,
+                                Overview = movie.Overview
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error fetching movie {historyMovie.Id}: {ex.Message}");
+                    }
+                    return null;
+                });
+
+                var movies = await Task.WhenAll(movieTasks);
+                response.movies = movies.Where(m => m != null).ToList();
+            }
+
+            // Get TV show history
+            var tvHistory = await this.userTvHistoryRepository.GetUserTvHistory(userId);
+            if (tvHistory?.tvShows?.Any() == true)
+            {
+                var tvTasks = tvHistory.tvShows.Select(async historyTv =>
+                {
+                    try
+                    {
+                        var tvShow = await this.tmdbCacheService.GetTvShowAsync(int.Parse(historyTv.Id));
+                        if (tvShow != null)
+                        {
+                            return new TvShow
+                            {
+                                Id = tvShow.Id.ToString(),
+                                Title = tvShow.Name,
+                                FirstAirDate = tvShow.FirstAirDate,
+                                Poster = tvShow.PosterPath,
+                                Overview = tvShow.Overview
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error fetching TV show {historyTv.Id}: {ex.Message}");
                     }
                     return null;
                 });

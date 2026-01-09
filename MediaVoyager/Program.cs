@@ -67,6 +67,10 @@ builder.Services.AddSingleton<ICacheRepository<MediaVoyager.Entities.MovieCache>
 builder.Services.AddSingleton<ICacheRepository<MediaVoyager.Entities.TvShowCache>, TvShowCacheRepository>();
 builder.Services.AddSingleton<ITmdbCacheService, TmdbCacheService>();
 
+// History repositories
+builder.Services.AddSingleton<IUserMovieHistoryRepository, UserMovieHistoryRepository>();
+builder.Services.AddSingleton<IUserTvHistoryRepository, UserTvHistoryRepository>();
+
 // Dashboard and activity tracking services
 builder.Services.AddSingleton<IUserActivityRepository, UserActivityRepository>();
 builder.Services.AddSingleton<IDashboardService, DashboardService>();

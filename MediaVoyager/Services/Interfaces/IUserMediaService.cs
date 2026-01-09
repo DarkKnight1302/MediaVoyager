@@ -22,5 +22,8 @@ namespace MediaVoyager.Services.Interfaces
         public Task<FavouriteMoviesResponse> GetUserFavouriteMovies(string userId);
         public Task RemoveTvShowsFromFavourites(string userId, List<string> tvIds);
         public Task<FavouriteTvShowsResponse> GetUserFavouriteTvShows(string userId);
+
+        // History methods
+        public Task<HistoryResponse> GetUserHistory(string userId);
     }
 }
