@@ -1,5 +1,6 @@
 ﻿using MediaVoyager.Services.Interfaces;
 using NewHorizonLib.Services.Interfaces;
+using System.Web;
 
 namespace MediaVoyager.Services
 {
@@ -17,12 +18,12 @@ namespace MediaVoyager.Services
             _logger = logger;
         }
 
-        public async Task SendErrorNotificationAsync(string endpoint, string userId, string errorType, string errorDetails)
+        public async Task SendErrorNotificationAsync(string endpoint, string userId, string errorType, string errorDetails, string? requestLogs = null)
         {
             try
             {
                 string subject = $"[MediaVoyager Alert] Recommendation API Error - {errorType}";
-                string body = BuildErrorEmailBody(endpoint, userId, errorType, errorDetails);
+                string body = BuildErrorEmailBody(endpoint, userId, errorType, errorDetails, requestLogs);
 
                 await _emailService.SendMail(NotificationEmail, body, subject, SenderName, FromEmail, true);
                 _logger.LogInformation("Error notification email sent for endpoint: {Endpoint}, ErrorType: {ErrorType}", endpoint, errorType);
@@ -33,8 +34,20 @@ namespace MediaVoyager.Services
             }
         }
 
-        private static string BuildErrorEmailBody(string endpoint, string userId, string errorType, string errorDetails)
+        private static string BuildErrorEmailBody(string endpoint, string userId, string errorType, string errorDetails, string? requestLogs)
         {
+            string logsSection = string.IsNullOrWhiteSpace(requestLogs)
+                ? string.Empty
+                : $@"
+                                <tr>
+                                    <td colspan=""2"" style=""padding:15px 10px 5px 10px; color:#93a4b6; font-weight:600; border-top:2px solid #2b3645;"">Console Logs</td>
+                                </tr>
+                                <tr>
+                                    <td colspan=""2"" style=""padding:10px;"">
+                                        <div style=""background:#0a0f1a; border:1px solid #2b3645; border-radius:6px; padding:12px; font-family:monospace; font-size:11px; color:#a3e635; white-space:pre-wrap; word-break:break-word; max-height:400px; overflow-y:auto;"">{HttpUtility.HtmlEncode(requestLogs)}</div>
+                                    </td>
+                                </tr>";
+
             return $@"<!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -73,7 +86,7 @@ namespace MediaVoyager.Services
                                 <tr>
                                     <td style=""padding:10px; color:#93a4b6; font-weight:600;"">Details</td>
                                     <td style=""padding:10px; color:#f8fafc;"">{errorDetails}</td>
-                                </tr>
+                                </tr>{logsSection}
                             </table>
                         </div>
                         <div style=""background:#0f1426; padding:18px 16px; text-align:center; border-top:1px solid #2b3645;"">

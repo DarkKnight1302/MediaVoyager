@@ -58,7 +58,6 @@ builder.Services.AddSingleton<MediaVoyager.Services.Interfaces.IRecommendationCl
 builder.Services.AddSingleton<IRecommendationProviderService, RecommendationProviderService>();
 builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
-builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationService>();
 builder.Services.AddSingleton<IUserMediaService, UserMediaService>();
 builder.Services.AddSingleton<ISignInHandler, SignInHandler>();
 builder.Services.AddSingleton<IUserTvRepository, UserTvRepository>();
@@ -74,6 +73,12 @@ builder.Services.AddSingleton<IDashboardService, DashboardService>();
 
 // Error notification service
 builder.Services.AddSingleton<IErrorNotificationService, ErrorNotificationService>();
+
+// Request-scoped log collector for capturing logs during HTTP requests
+builder.Services.AddScoped<IRequestLogCollector, RequestLogCollector>();
+
+// Scoped services that depend on request-scoped log collector
+builder.Services.AddScoped<IMediaRecommendationService, MediaRecommendationService>();
 
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();

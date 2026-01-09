@@ -24,6 +24,7 @@ namespace MediaVoyager.Services
         private readonly IRecommendationClientResolver recommendationClientResolver;
         private readonly IRecommendationProviderService recommendationProviderService;
         private readonly IOmdbClient omdbClient;
+        private readonly IRequestLogCollector requestLogCollector;
 
         public MediaRecommendationService(
             ISecretService secretService,
@@ -32,7 +33,8 @@ namespace MediaVoyager.Services
             ITmdbCacheService tmdbCacheService,
             IRecommendationClientResolver recommendationClientResolver,
             IRecommendationProviderService recommendationProviderService,
-            IOmdbClient omdbClient)
+            IOmdbClient omdbClient,
+            IRequestLogCollector requestLogCollector)
         {
             this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
@@ -41,31 +43,32 @@ namespace MediaVoyager.Services
             this.recommendationClientResolver = recommendationClientResolver;
             this.recommendationProviderService = recommendationProviderService;
             this.omdbClient = omdbClient;
+            this.requestLogCollector = requestLogCollector;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
         {
-            Console.WriteLine($"[MediaRec][Movie] Start GetMovieRecommendationForUser userId={userId}");
+            Log($"[MediaRec][Movie] Start GetMovieRecommendationForUser userId={userId}");
             try
             {
                 TMDbClient tmdbClient = new TMDbClient(tmdbApiKey);
-                Console.WriteLine("[MediaRec][Movie] TMDbClient created");
+                Log("[MediaRec][Movie] TMDbClient created");
 
                 UserMovies userMovies = await this.userMoviesRepository.GetUserMovies(userId).ConfigureAwait(false);
-                Console.WriteLine(userMovies == null
+                Log(userMovies == null
                     ? "[MediaRec][Movie] No userMovies found"
                     : $"[MediaRec][Movie] Loaded userMovies favourites={userMovies.favouriteMovies?.Count ??0} watchHistory={userMovies.watchHistory?.Count ??0}");
 
                 if (userMovies == null)
                 {
-                    Console.WriteLine("[MediaRec][Movie] Returning null because userMovies is null");
+                    Log("[MediaRec][Movie] Returning null because userMovies is null");
                     return null;
                 }
 
                 List<string> favouriteMovies = userMovies.favouriteMovies.Select(x => ConvertToEasyName(x)).ToList<string>();
                 List<string> watchHistory = userMovies.watchHistory.Select(x => ConvertToEasyName(x)).ToList<string>();
-                Console.WriteLine($"[MediaRec][Movie] favouriteMovies(count={favouriteMovies.Count}) sample=[{string.Join(", ", favouriteMovies.Take(3))}]...");
-                Console.WriteLine($"[MediaRec][Movie] watchHistory(count={watchHistory.Count}) sample=[{string.Join(", ", watchHistory.Take(3))}]...");
+                Log($"[MediaRec][Movie] favouriteMovies(count={favouriteMovies.Count}) sample=[{string.Join(", ", favouriteMovies.Take(3))}]...");
+                Log($"[MediaRec][Movie] watchHistory(count={watchHistory.Count}) sample=[{string.Join(", ", watchHistory.Take(3))}]...");
 
                 IRecommendationClient recClient = GetRecommendationClient();
 
@@ -73,17 +76,17 @@ namespace MediaVoyager.Services
                 for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
                 {
                     movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, temperature);
-                    Console.WriteLine($"[MediaRec][Movie] Recommendation (temp={temperature:F1}): '{movie}'");
+                    Log($"[MediaRec][Movie] Recommendation (temp={temperature:F1}): '{movie}'");
                     if (!string.IsNullOrEmpty(movie))
                     {
                         break;
                     }
-                    Console.WriteLine($"[MediaRec][Movie] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
+                    Log($"[MediaRec][Movie] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
                 }
 
                 if (string.IsNullOrEmpty(movie))
                 {
-                    Console.WriteLine("[MediaRec][Movie] Returning null because recommendation is empty after all retries");
+                    Log("[MediaRec][Movie] Returning null because recommendation is empty after all retries");
                     return null;
                 }
 
@@ -92,19 +95,19 @@ namespace MediaVoyager.Services
                 name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
                 int year = int.Parse(movieParts[1]);
                 name = name.Trim();
-                Console.WriteLine($"[MediaRec][Movie] Parsed recommendation name='{name}', year={year}");
+                Log($"[MediaRec][Movie] Parsed recommendation name='{name}', year={year}");
 
-                Console.WriteLine($"[MediaRec][Movie] Searching TMDb for movie name='{name}', year={year}");
+                Log($"[MediaRec][Movie] Searching TMDb for movie name='{name}', year={year}");
                 SearchContainer<SearchMovie> searchContainer = await tmdbClient.SearchMovieAsync(name,0, false, year).ConfigureAwait(false);
                 List<SearchMovie> results = searchContainer.Results;
-                Console.WriteLine($"[MediaRec][Movie] Search results with year: count={(results?.Count ??0)}");
+                Log($"[MediaRec][Movie] Search results with year: count={(results?.Count ??0)}");
 
                 if (results == null || results.Count ==0)
                 {
-                    Console.WriteLine("[MediaRec][Movie] No results with year filter, retrying without year");
+                    Log("[MediaRec][Movie] No results with year filter, retrying without year");
                     searchContainer = await tmdbClient.SearchMovieAsync(name,0).ConfigureAwait(false);
                     results = searchContainer.Results;
-                    Console.WriteLine($"[MediaRec][Movie] Search results without year: count={(results?.Count ??0)}");
+                    Log($"[MediaRec][Movie] Search results without year: count={(results?.Count ??0)}");
                 }
 
                 if (results != null && results.Count >0)
@@ -114,16 +117,16 @@ namespace MediaVoyager.Services
                     if (results.Count > 1 && results[1].Popularity > results[0].Popularity)
                     {
                         selectedMovie = results[1];
-                        Console.WriteLine($"[MediaRec][Movie] Selected second result (more popular): movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity} vs first result popularity={results[0].Popularity}");
+                        Log($"[MediaRec][Movie] Selected second result (more popular): movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity} vs first result popularity={results[0].Popularity}");
                     }
                     else
                     {
-                        Console.WriteLine($"[MediaRec][Movie] Using top result movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity}");
+                        Log($"[MediaRec][Movie] Using top result movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity}");
                     }
 
                     int movieId = selectedMovie.Id;
                     TMDbLib.Objects.Movies.Movie movieTmdb = await this.tmdbCacheService.GetMovieAsync(movieId);
-                    Console.WriteLine(movieTmdb == null
+                    Log(movieTmdb == null
                         ? "[MediaRec][Movie] tmdbCacheService returned null for movie"
                         : $"[MediaRec][Movie] Loaded movie details: title='{movieTmdb.Title}', releaseDate={movieTmdb.ReleaseDate}, genres={(movieTmdb.Genres == null ?0 : movieTmdb.Genres.Count)}");
 
@@ -141,51 +144,51 @@ namespace MediaVoyager.Services
                             Title = movieTmdb.Title,
                             ImdbRating = await this.omdbClient.TryGetImdbRatingAsync(movieTmdb.ImdbId).ConfigureAwait(false)
                         };
-                        Console.WriteLine($"[MediaRec][Movie] Returning response Id={movieResponse.Id} Title='{movieResponse.Title}' Poster='{movieResponse.Poster}'");
+                        Log($"[MediaRec][Movie] Returning response Id={movieResponse.Id} Title='{movieResponse.Title}' Poster='{movieResponse.Poster}'");
                         return movieResponse;
                     }
-                    Console.WriteLine("[MediaRec][Movie] Returning null because movie details were null");
+                    Log("[MediaRec][Movie] Returning null because movie details were null");
                 }
                 else
                 {
-                    Console.WriteLine("[MediaRec][Movie] Returning null because no search results were found");
+                    Log("[MediaRec][Movie] Returning null because no search results were found");
                 }
                 return null;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[MediaRec][Movie] Exception: {ex.GetType().Name}: {ex.Message}");
+                Log($"[MediaRec][Movie] Exception: {ex.GetType().Name}: {ex.Message}");
                 throw;
             }
             finally
             {
-                Console.WriteLine($"[MediaRec][Movie] End GetMovieRecommendationForUser userId={userId}");
+                Log($"[MediaRec][Movie] End GetMovieRecommendationForUser userId={userId}");
             }
         }
 
         public async Task<TvShowResponse> GetTvShowRecommendationForUser(string userId)
         {
-            Console.WriteLine($"[MediaRec][TV] Start GetTvShowRecommendationForUser userId={userId}");
+            Log($"[MediaRec][TV] Start GetTvShowRecommendationForUser userId={userId}");
             try
             {
                 TMDbClient tmdbClient = new TMDbClient(tmdbApiKey);
-                Console.WriteLine("[MediaRec][TV] TMDbClient created");
+                Log("[MediaRec][TV] TMDbClient created");
 
                 UserTv userTvShows = await this.userTvRepository.GetUserTv(userId).ConfigureAwait(false);
-                Console.WriteLine(userTvShows == null
+                Log(userTvShows == null
                     ? "[MediaRec][TV] No userTvShows found"
                     : $"[MediaRec][TV] Loaded userTvShows favourites={userTvShows.favouriteTv?.Count ??0} watchHistory={userTvShows.watchHistory?.Count ??0}");
 
                 if (userTvShows == null)
                 {
-                    Console.WriteLine("[MediaRec][TV] Returning null because userTvShows is null");
+                    Log("[MediaRec][TV] Returning null because userTvShows is null");
                     return null;
                 }
 
                 List<string> favouriteTvShows = userTvShows.favouriteTv.Select(x => ConvertToEasyName(x)).ToList<string>();
                 List<string> watchHistory = userTvShows.watchHistory.Select(x => ConvertToEasyName(x)).ToList<string>();
-                Console.WriteLine($"[MediaRec][TV] favouriteTvShows(count={favouriteTvShows.Count}) sample=[{string.Join(", ", favouriteTvShows.Take(3))}]...");
-                Console.WriteLine($"[MediaRec][TV] watchHistory(count={watchHistory.Count}) sample=[{string.Join(", ", watchHistory.Take(3))}]...");
+                Log($"[MediaRec][TV] favouriteTvShows(count={favouriteTvShows.Count}) sample=[{string.Join(", ", favouriteTvShows.Take(3))}]...");
+                Log($"[MediaRec][TV] watchHistory(count={watchHistory.Count}) sample=[{string.Join(", ", watchHistory.Take(3))}]...");
 
                 IRecommendationClient recClient = GetRecommendationClient();
 
@@ -193,17 +196,17 @@ namespace MediaVoyager.Services
                 for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
                 {
                     tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, temperature);
-                    Console.WriteLine($"[MediaRec][TV] Recommendation (temp={temperature:F1}): '{tvShow}'");
+                    Log($"[MediaRec][TV] Recommendation (temp={temperature:F1}): '{tvShow}'");
                     if (!string.IsNullOrEmpty(tvShow))
                     {
                         break;
                     }
-                    Console.WriteLine($"[MediaRec][TV] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
+                    Log($"[MediaRec][TV] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
                 }
 
                 if (string.IsNullOrEmpty(tvShow))
                 {
-                    Console.WriteLine("[MediaRec][TV] Returning null because recommendation is empty after all retries");
+                    Log("[MediaRec][TV] Returning null because recommendation is empty after all retries");
                     return null;
                 }
 
@@ -212,19 +215,19 @@ namespace MediaVoyager.Services
                 name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
                 int year = int.Parse(tvShowParts[1]);
                 name = name.Trim();
-                Console.WriteLine($"[MediaRec][TV] Parsed recommendation name='{name}', year={year}");
+                Log($"[MediaRec][TV] Parsed recommendation name='{name}', year={year}");
 
-                Console.WriteLine($"[MediaRec][TV] Searching TMDb for TV show name='{name}', year={year}");
+                Log($"[MediaRec][TV] Searching TMDb for TV show name='{name}', year={year}");
                 SearchContainer<SearchTv> searchContainer = await tmdbClient.SearchTvShowAsync(name,0, false, year).ConfigureAwait(false);
 
                 List<SearchTv> results = searchContainer.Results;
-                Console.WriteLine($"[MediaRec][TV] Search results with year: count={(results?.Count ??0)}");
+                Log($"[MediaRec][TV] Search results with year: count={(results?.Count ??0)}");
                 if (results == null || results.Count ==0)
                 {
-                    Console.WriteLine("[MediaRec][TV] No results with year filter, retrying without year");
+                    Log("[MediaRec][TV] No results with year filter, retrying without year");
                     searchContainer = await tmdbClient.SearchTvShowAsync(name,0).ConfigureAwait(false);
                     results = searchContainer.Results;
-                    Console.WriteLine($"[MediaRec][TV] Search results without year: count={(results?.Count ??0)}");
+                    Log($"[MediaRec][TV] Search results without year: count={(results?.Count ??0)}");
                 }
 
                 if (results != null && results.Count >0)
@@ -234,15 +237,15 @@ namespace MediaVoyager.Services
                     if (results.Count > 1 && results[1].Popularity > results[0].Popularity)
                     {
                         selectedTvShow = results[1];
-                        Console.WriteLine($"[MediaRec][TV] Selected second result (more popular): tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity} vs first result popularity={results[0].Popularity}");
+                        Log($"[MediaRec][TV] Selected second result (more popular): tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity} vs first result popularity={results[0].Popularity}");
                     }
                     else
                     {
-                        Console.WriteLine($"[MediaRec][TV] Using top result tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity}");
+                        Log($"[MediaRec][TV] Using top result tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity}");
                     }
 
                     int tvShowId = selectedTvShow.Id;
-                    Console.WriteLine($"[MediaRec][TV] Using top result tvShowId={tvShowId}");
+                    Log($"[MediaRec][TV] Using top result tvShowId={tvShowId}");
                     Task<TMDbLib.Objects.TvShows.TvShow> tvShowTask = this.tmdbCacheService.GetTvShowAsync(tvShowId);
                     Task<ExternalIdsTvShow> externalIdsTask = tmdbClient.GetTvShowExternalIdsAsync(tvShowId);
 
@@ -251,12 +254,12 @@ namespace MediaVoyager.Services
                     TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await tvShowTask.ConfigureAwait(false);
                     ExternalIdsTvShow externalIds = await externalIdsTask.ConfigureAwait(false);
 
-                    Console.WriteLine(tvShowTmdb == null
+                    Log(tvShowTmdb == null
                         ? "[MediaRec][TV] tmdbCacheService returned null for TV show"
                         : $"[MediaRec][TV] Loaded TV details: name='{tvShowTmdb.Name}', firstAirDate={tvShowTmdb.FirstAirDate}, genres={(tvShowTmdb.Genres == null ?0 : tvShowTmdb.Genres.Count)}");
 
                     string imdbId = externalIds?.ImdbId;
-                    Console.WriteLine(string.IsNullOrWhiteSpace(imdbId)
+                    Log(string.IsNullOrWhiteSpace(imdbId)
                         ? "[MediaRec][TV] External IDs did not contain an IMDb id"
                         : $"[MediaRec][TV] External IDs imdbId='{imdbId}'");
 
@@ -278,33 +281,39 @@ namespace MediaVoyager.Services
                             NumberOfSeasons = tvShowTmdb.NumberOfSeasons,
                             ImdbRating = await imdbRatingTask.ConfigureAwait(false)
                         };
-                        Console.WriteLine($"[MediaRec][TV] Returning response Id={tvShowResponse.Id} Title='{tvShowResponse.Title}' Poster='{tvShowResponse.Poster}'");
+                        Log($"[MediaRec][TV] Returning response Id={tvShowResponse.Id} Title='{tvShowResponse.Title}' Poster='{tvShowResponse.Poster}'");
                         return tvShowResponse;
                     }
-                    Console.WriteLine("[MediaRec][TV] Returning null because TV details were null");
+                    Log("[MediaRec][TV] Returning null because TV details were null");
                 }
                 else
                 {
-                    Console.WriteLine("[MediaRec][TV] Returning null because no search results were found");
+                    Log("[MediaRec][TV] Returning null because no search results were found");
                 }
                 return null;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[MediaRec][TV] Exception: {ex.GetType().Name}: {ex.Message}");
+                Log($"[MediaRec][TV] Exception: {ex.GetType().Name}: {ex.Message}");
                 throw;
             }
             finally
             {
-                Console.WriteLine($"[MediaRec][TV] End GetTvShowRecommendationForUser userId={userId}");
+                Log($"[MediaRec][TV] End GetTvShowRecommendationForUser userId={userId}");
             }
+        }
+
+        private void Log(string message)
+        {
+            Console.WriteLine(message);
+            requestLogCollector.AddLog(message);
         }
 
         private IRecommendationClient GetRecommendationClient()
         {
             // Get provider from the in-memory provider service
             RecommendationProvider provider = this.recommendationProviderService.CurrentProvider;
-            Console.WriteLine($"[MediaRec] Using recommendation provider: {provider}");
+            Log($"[MediaRec] Using recommendation provider: {provider}");
             return this.recommendationClientResolver.Resolve(provider);
         }
 

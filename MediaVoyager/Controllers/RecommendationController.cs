@@ -19,19 +19,22 @@ namespace MediaVoyager.Controllers
         private readonly ITokenService tokenService;
         private readonly IUserActivityRepository userActivityRepository;
         private readonly IErrorNotificationService errorNotificationService;
+        private readonly IRequestLogCollector requestLogCollector;
 
         public RecommendationController(
             IMediaRecommendationService mediaRecommendationService,
             ILogger<RecommendationController> logger,
             ITokenService tokenService,
             IUserActivityRepository userActivityRepository,
-            IErrorNotificationService errorNotificationService)
+            IErrorNotificationService errorNotificationService,
+            IRequestLogCollector requestLogCollector)
         {
             this.mediaRecommendationService = mediaRecommendationService;
             this.tokenService = tokenService;
             this.logger = logger;
             this.userActivityRepository = userActivityRepository;
             this.errorNotificationService = errorNotificationService;
+            this.requestLogCollector = requestLogCollector;
         }
 
         [HttpGet("movie")]
@@ -56,7 +59,8 @@ namespace MediaVoyager.Controllers
                         "GET /Recommendation/movie",
                         userId,
                         "Empty Response",
-                        "Movie recommendation service returned null response.");
+                        "Movie recommendation service returned null response.",
+                        this.requestLogCollector.GetLogs());
                     return NotFound();
                 }
 
@@ -72,7 +76,8 @@ namespace MediaVoyager.Controllers
                     "GET /Recommendation/movie",
                     userId,
                     "Exception",
-                    $"Exception: {ex.Message}");
+                    $"Exception: {ex.Message}",
+                    this.requestLogCollector.GetLogs());
                 return StatusCode(500, "An error occurred while getting movie recommendation.");
             }
         }
@@ -99,7 +104,8 @@ namespace MediaVoyager.Controllers
                         "GET /Recommendation/tvshow",
                         userId,
                         "Empty Response",
-                        "TV show recommendation service returned null response.");
+                        "TV show recommendation service returned null response.",
+                        this.requestLogCollector.GetLogs());
                     return NotFound();
                 }
 
@@ -115,7 +121,8 @@ namespace MediaVoyager.Controllers
                     "GET /Recommendation/tvshow",
                     userId,
                     "Exception",
-                    $"Exception: {ex.Message}");
+                    $"Exception: {ex.Message}",
+                    this.requestLogCollector.GetLogs());
                 return StatusCode(500, "An error occurred while getting TV show recommendation.");
             }
         }
