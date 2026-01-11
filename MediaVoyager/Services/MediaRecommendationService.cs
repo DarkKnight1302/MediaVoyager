@@ -73,15 +73,34 @@ namespace MediaVoyager.Services
                 IRecommendationClient recClient = GetRecommendationClient();
 
                 string movie = null;
+                string name = null;
+                int year = 0;
                 for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
                 {
                     movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, temperature);
                     Log($"[MediaRec][Movie] Recommendation (temp={temperature:F1}): '{movie}'");
-                    if (!string.IsNullOrEmpty(movie))
+                    if (string.IsNullOrEmpty(movie))
                     {
-                        break;
+                        Log($"[MediaRec][Movie] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
+                        continue;
                     }
-                    Log($"[MediaRec][Movie] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
+
+                    string[] movieParts = movie.Split('\n');
+                    name = movieParts[0];
+                    name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
+                    year = int.Parse(movieParts[1]);
+                    name = name.Trim();
+                    Log($"[MediaRec][Movie] Parsed recommendation name='{name}', year={year}");
+
+                    // Check if the recommended movie already exists in watch history
+                    if (IsMovieInWatchHistory(userMovies.watchHistory, name, year))
+                    {
+                        Log($"[MediaRec][Movie] Movie '{name}' ({year}) already in watch history, retrying with higher temperature");
+                        movie = null;
+                        continue;
+                    }
+
+                    break;
                 }
 
                 if (string.IsNullOrEmpty(movie))
@@ -89,13 +108,6 @@ namespace MediaVoyager.Services
                     Log("[MediaRec][Movie] Returning null because recommendation is empty after all retries");
                     return null;
                 }
-
-                string[] movieParts = movie.Split('\n');
-                string name = movieParts[0];
-                name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
-                int year = int.Parse(movieParts[1]);
-                name = name.Trim();
-                Log($"[MediaRec][Movie] Parsed recommendation name='{name}', year={year}");
 
                 Log($"[MediaRec][Movie] Searching TMDb for movie name='{name}', year={year}");
                 SearchContainer<SearchMovie> searchContainer = await tmdbClient.SearchMovieAsync(name,0, false, year).ConfigureAwait(false);
@@ -193,15 +205,34 @@ namespace MediaVoyager.Services
                 IRecommendationClient recClient = GetRecommendationClient();
 
                 string tvShow = null;
+                string name = null;
+                int year = 0;
                 for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
                 {
                     tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, temperature);
                     Log($"[MediaRec][TV] Recommendation (temp={temperature:F1}): '{tvShow}'");
-                    if (!string.IsNullOrEmpty(tvShow))
+                    if (string.IsNullOrEmpty(tvShow))
                     {
-                        break;
+                        Log($"[MediaRec][TV] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
+                        continue;
                     }
-                    Log($"[MediaRec][TV] Empty recommendation at temp={temperature:F1}, retrying with higher temperature");
+
+                    string[] tvShowParts = tvShow.Split('\n');
+                    name = tvShowParts[0];
+                    name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
+                    year = int.Parse(tvShowParts[1]);
+                    name = name.Trim();
+                    Log($"[MediaRec][TV] Parsed recommendation name='{name}', year={year}");
+
+                    // Check if the recommended TV show already exists in watch history
+                    if (IsTvShowInWatchHistory(userTvShows.watchHistory, name, year))
+                    {
+                        Log($"[MediaRec][TV] TV show '{name}' ({year}) already in watch history, retrying with higher temperature");
+                        tvShow = null;
+                        continue;
+                    }
+
+                    break;
                 }
 
                 if (string.IsNullOrEmpty(tvShow))
@@ -209,13 +240,6 @@ namespace MediaVoyager.Services
                     Log("[MediaRec][TV] Returning null because recommendation is empty after all retries");
                     return null;
                 }
-
-                string[] tvShowParts = tvShow.Split('\n');
-                string name = tvShowParts[0];
-                name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
-                int year = int.Parse(tvShowParts[1]);
-                name = name.Trim();
-                Log($"[MediaRec][TV] Parsed recommendation name='{name}', year={year}");
 
                 Log($"[MediaRec][TV] Searching TMDb for TV show name='{name}', year={year}");
                 SearchContainer<SearchTv> searchContainer = await tmdbClient.SearchTvShowAsync(name,0, false, year).ConfigureAwait(false);
@@ -325,6 +349,16 @@ namespace MediaVoyager.Services
         private string ConvertToEasyName(TvShow tvShow)
         {
             return $"{tvShow.Title} ({tvShow.FirstAirDate.Value.Year})";
+        }
+
+        private bool IsMovieInWatchHistory(IEnumerable<Movie> watchHistory, string name, int year)
+        {
+            return watchHistory.Any(x => string.Equals(x.Title, name, StringComparison.OrdinalIgnoreCase) && x.ReleaseDate.HasValue && x.ReleaseDate.Value.Year == year);
+        }
+
+        private bool IsTvShowInWatchHistory(IEnumerable<TvShow> watchHistory, string name, int year)
+        {
+            return watchHistory.Any(x => string.Equals(x.Title, name, StringComparison.OrdinalIgnoreCase) && x.FirstAirDate.HasValue && x.FirstAirDate.Value.Year == year);
         }
     }
 }
