@@ -24,7 +24,7 @@ namespace MediaVoyager.Clients
         private readonly HttpClient _httpClient;
         private readonly string _primaryApiKey;
         private readonly string _backupApiKey;
-        private readonly IRequestLogCollector _requestLogCollector;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         // --- Rate Limiting State ---
         private static readonly int MaxRequests = 15;
@@ -45,13 +45,13 @@ namespace MediaVoyager.Clients
         private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
         private static readonly TimeSpan TooManyRequestsRetryDelay = TimeSpan.FromSeconds(6);
 
-        public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger, IRequestLogCollector requestLogCollector)
+        public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger, IHttpContextAccessor httpContextAccessor)
         {
             _primaryApiKey = secretService.GetSecretValue("groq_api_key");
             _backupApiKey = secretService.GetSecretValue("groq_api_key_backup");
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _requestLogCollector = requestLogCollector;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
@@ -296,14 +296,15 @@ namespace MediaVoyager.Clients
         public void Dispose()
         {
             _httpClient?.Dispose();
-            RateLimitSemaphore?.Dispose();
             GC.SuppressFinalize(this);
         }
 
         private void Log(string message)
         {
             Console.WriteLine(message);
-            _requestLogCollector?.AddLog(message);
+            // Resolve scoped IRequestLogCollector from the current HTTP request context
+            var requestLogCollector = _httpContextAccessor.HttpContext?.RequestServices?.GetService<IRequestLogCollector>();
+            requestLogCollector?.AddLog(message);
         }
 
         #region DTOs

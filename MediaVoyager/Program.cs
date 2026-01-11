@@ -51,10 +51,10 @@ builder.Host.ConfigureHostOptions(options =>
 {
     options.ShutdownTimeout = TimeSpan.FromSeconds(30);
 });
-builder.Services.AddScoped<IGeminiRecommendationClient, GeminiRecommendationClient>();
-builder.Services.AddScoped<IGroqRecommendationClient, GroqRecommendationClient>();
+builder.Services.AddSingleton<IGeminiRecommendationClient, GeminiRecommendationClient>();
+builder.Services.AddSingleton<IGroqRecommendationClient, GroqRecommendationClient>();
 builder.Services.AddSingleton<IOmdbClient, OmdbClient>();
-builder.Services.AddScoped<MediaVoyager.Services.Interfaces.IRecommendationClientResolver, RecommendationClientResolver>();
+builder.Services.AddSingleton<MediaVoyager.Services.Interfaces.IRecommendationClientResolver, RecommendationClientResolver>();
 builder.Services.AddSingleton<IRecommendationProviderService, RecommendationProviderService>();
 builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
@@ -81,9 +81,8 @@ builder.Services.AddSingleton<IErrorNotificationService, ErrorNotificationServic
 
 // Request-scoped log collector for capturing logs during HTTP requests
 builder.Services.AddScoped<IRequestLogCollector, RequestLogCollector>();
-
-// Scoped services that depend on request-scoped log collector
-builder.Services.AddScoped<IMediaRecommendationService, MediaRecommendationService>();
+// MediaRecommendationService uses IHttpContextAccessor to resolve scoped IRequestLogCollector at runtime
+builder.Services.AddSingleton<IMediaRecommendationService, MediaRecommendationService>();
 
 Registration.InitializeServices(builder.Services, builder.Configuration, "MediaVoyager", 0, GlobalConstant.Issuer, "MediaVoyagerClient");
 builder.Services.AddAuthorization();

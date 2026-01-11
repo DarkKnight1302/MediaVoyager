@@ -10,6 +10,7 @@ using TMDbLib.Objects.General;
 using TMDbLib.Objects.Movies;
 using TMDbLib.Objects.Search;
 using TMDbLib.Objects.TvShows;
+using Microsoft.AspNetCore.Http;
 using Movie = MediaVoyager.Models.Movie;
 using TvShow = MediaVoyager.Models.TvShow;
 
@@ -24,7 +25,7 @@ namespace MediaVoyager.Services
         private readonly IRecommendationClientResolver recommendationClientResolver;
         private readonly IRecommendationProviderService recommendationProviderService;
         private readonly IOmdbClient omdbClient;
-        private readonly IRequestLogCollector requestLogCollector;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
         public MediaRecommendationService(
             ISecretService secretService,
@@ -34,7 +35,7 @@ namespace MediaVoyager.Services
             IRecommendationClientResolver recommendationClientResolver,
             IRecommendationProviderService recommendationProviderService,
             IOmdbClient omdbClient,
-            IRequestLogCollector requestLogCollector)
+            IHttpContextAccessor httpContextAccessor)
         {
             this.tmdbApiKey = secretService.GetSecretValue("tmdb_api_key");
             this.userMoviesRepository = userMoviesRepository;
@@ -43,7 +44,7 @@ namespace MediaVoyager.Services
             this.recommendationClientResolver = recommendationClientResolver;
             this.recommendationProviderService = recommendationProviderService;
             this.omdbClient = omdbClient;
-            this.requestLogCollector = requestLogCollector;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
@@ -330,7 +331,9 @@ namespace MediaVoyager.Services
         private void Log(string message)
         {
             Console.WriteLine(message);
-            requestLogCollector.AddLog(message);
+            // Resolve scoped IRequestLogCollector from the current HTTP request context
+            var requestLogCollector = httpContextAccessor.HttpContext?.RequestServices?.GetService<IRequestLogCollector>();
+            requestLogCollector?.AddLog(message);
         }
 
         private IRecommendationClient GetRecommendationClient()

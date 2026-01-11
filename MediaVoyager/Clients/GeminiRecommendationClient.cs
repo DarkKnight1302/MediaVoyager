@@ -1,5 +1,6 @@
 ﻿namespace MediaVoyager.Clients
 {
+    using MediaVoyager.Services.Interfaces;
     using NewHorizonLib.Services;
     // GeminiRecommendationClient.cs
 
@@ -23,6 +24,8 @@
     public class GeminiRecommendationClient : IDisposable, IGeminiRecommendationClient, IRecommendationClient
     {
         private readonly HttpClient _httpClient;
+        private readonly string _geminiApiKey;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly ILogger logger;
         // --- Rate Limiting State ---
@@ -43,33 +46,28 @@
         /// <summary>
         /// Initializes a new instance of the GeminiRecommendationClient.
         /// </summary>
-        /// <param name="apiKey">Your Google Gemini API key.</param>
-        public GeminiRecommendationClient(ISecretService secretService, ILogger<GeminiRecommendationClient> logger)
+        public GeminiRecommendationClient(ISecretService secretService, ILogger<GeminiRecommendationClient> logger, IHttpContextAccessor httpContextAccessor)
         {
             this.logger = logger;
-            string geminiApiKey = secretService.GetSecretValue("gemini_api_key");
+            _geminiApiKey = secretService.GetSecretValue("gemini_api_key");
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            // Correctly add the API key to the request header as per the cURL command.
-            _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", geminiApiKey);
+            _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", _geminiApiKey);
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
         /// Gets a movie recommendation from the Gemini API based on user preferences.
         /// This method is rate-limited to 2 requests per minute.
         /// </summary>
-        /// <param name="favoriteMovies">A list of the user's favorite movies.</param>
-        /// <param name="watchHistory">A list of movies the user has already watched.</param>
-        /// <returns>The name of the recommended movie as a string.</returns>
         public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
         {
             // 1. Wait for a slot in the rate limit window before proceeding.
             await WaitForRateLimitSlotAsync();
 
             // 2. Prepare the request for the Gemini API
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
+            Log($"[{DateTime.Now:HH:mm:ss}] [Gemini][Movie] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
 
-            // Correctly use the gemini-2.5-pro model and remove the API key from the URL.
             var requestUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
             var requestBody = BuildGeminiRequest(favoriteMovies, watchHistory, temperature);
@@ -93,23 +91,19 @@
                 var responseBody = await response.Content.ReadAsStringAsync();
                 var geminiResponse = JsonSerializer.Deserialize<GeminiResponse>(responseBody);
 
-                // Extract the movie name from the first candidate in the response.
                 return geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text?.Trim()
                        ?? string.Empty;
             }
             catch (HttpRequestException ex)
             {
-                // If this is our daily rate limit exception, bubble it up.
                 if (ex.StatusCode == HttpStatusCode.TooManyRequests)
                 {
                     throw;
                 }
-                // Handle potential network or API errors
                 this.logger.LogError($"Error calling Gemini API: {ex.Message}");
             }
             catch (JsonException ex)
             {
-                // Handle errors in parsing the response
                 this.logger.LogError($"Error parsing API response: {ex.Message}");
             }
             catch (Exception e)
@@ -250,16 +244,6 @@
             return request;
         }
 
-        /// <summary>
-        /// Disposes of the HttpClient and SemaphoreSlim.
-        /// </summary>
-        public void Dispose()
-        {
-            _httpClient?.Dispose();
-            RateLimitSemaphore?.Dispose();
-            GC.SuppressFinalize(this);
-        }
-
         public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, double temperature)
         {
             // 1. Wait for a slot in the rate limit window before proceeding.
@@ -316,6 +300,20 @@
                 this.logger.LogError($"Exception in tv show recommendation : {e.Message} \n {e.StackTrace}", e);
             }
             return string.Empty;
+        }
+
+        private void Log(string message)
+        {
+            Console.WriteLine(message);
+            // Resolve scoped IRequestLogCollector from the current HTTP request context
+            var requestLogCollector = _httpContextAccessor.HttpContext?.RequestServices?.GetService<IRequestLogCollector>();
+            requestLogCollector?.AddLog(message);
+        }
+
+        public void Dispose()
+        {
+            _httpClient?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         // --- C# Models for JSON Serialization/Deserialization ---
