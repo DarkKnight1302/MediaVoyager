@@ -21,15 +21,17 @@ namespace MediaVoyager.Clients
     public class GroqRecommendationClient : IDisposable, IGroqRecommendationClient, IRecommendationClient
     {
         private readonly HttpClient _httpClient;
+        private readonly string _primaryApiKey;
+        private readonly string _backupApiKey;
 
         // --- Rate Limiting State ---
-        private static readonly int MaxRequests = 9;
+        private static readonly int MaxRequests = 15;
         private static readonly TimeSpan TimePeriod = TimeSpan.FromMinutes(1);
         private static readonly Queue<DateTime> RequestTimestamps = new Queue<DateTime>();
         private static readonly SemaphoreSlim RateLimitSemaphore = new SemaphoreSlim(1, 1);
 
         // --- Daily Rate Limiting State (combined across all methods) ---
-        private static readonly int MaxRequestsPerDay = 1000;
+        private static readonly int MaxRequestsPerDay = 10000;
         private static DateTime CurrentDay = DateTime.UtcNow.Date;
         private static int DailyRequestCount = 0;
 
@@ -43,20 +45,17 @@ namespace MediaVoyager.Clients
 
         public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger)
         {
-            // logger parameter is kept to preserve constructor signature used by DI,
-            // but this client now logs via Console.WriteLine.
-
-            string groqApiKey = secretService.GetSecretValue("groq_api_key");
+            _primaryApiKey = secretService.GetSecretValue("groq_api_key");
+            _backupApiKey = secretService.GetSecretValue("groq_api_key_backup");
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", groqApiKey);
         }
 
         public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
         {
             return await ExecuteWithRetryAsync(
                 operationName: "[Groq][Movie]",
-                operation: async () =>
+                operation: async (apiKey) =>
                 {
                     await WaitForRateLimitSlotAsync();
 
@@ -73,6 +72,7 @@ namespace MediaVoyager.Clients
                     {
                         Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
                     };
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
                     var response = await _httpClient.SendAsync(request);
                     response.EnsureSuccessStatusCode();
@@ -88,7 +88,7 @@ namespace MediaVoyager.Clients
         {
             return await ExecuteWithRetryAsync(
                 operationName: "[Groq][TV]",
-                operation: async () =>
+                operation: async (apiKey) =>
                 {
                     await WaitForRateLimitSlotAsync();
 
@@ -105,6 +105,7 @@ namespace MediaVoyager.Clients
                     {
                         Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
                     };
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
                     var response = await _httpClient.SendAsync(request);
                     response.EnsureSuccessStatusCode();
@@ -116,21 +117,30 @@ namespace MediaVoyager.Clients
                 });
         }
 
-        private async Task<string> ExecuteWithRetryAsync(string operationName, Func<Task<string>> operation)
+        private async Task<string> ExecuteWithRetryAsync(string operationName, Func<string, Task<string>> operation)
         {
+            bool useBackupKey = false;
+            
             for (int attempt = 1; attempt <= MaxRetryAttempts; attempt++)
             {
+                string apiKey = useBackupKey ? _backupApiKey : _primaryApiKey;
+                
                 try
                 {
-                    return await operation();
+                    return await operation(apiKey);
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
                 {
                     Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Rate limited (HTTP 429) (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
 
+                    if (!useBackupKey)
+                    {
+                        useBackupKey = true;
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Switching to backup API key for this request");
+                    }
+
                     if (attempt == MaxRetryAttempts)
                     {
-                        // Bubble up after final attempt so callers can differentiate 429 from other failures.
                         throw;
                     }
 
