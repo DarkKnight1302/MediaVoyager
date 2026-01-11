@@ -1,5 +1,6 @@
 namespace MediaVoyager.Clients
 {
+    using MediaVoyager.Services.Interfaces;
     using NewHorizonLib.Services;
 
     using System;
@@ -23,6 +24,7 @@ namespace MediaVoyager.Clients
         private readonly HttpClient _httpClient;
         private readonly string _primaryApiKey;
         private readonly string _backupApiKey;
+        private readonly IRequestLogCollector _requestLogCollector;
 
         // --- Rate Limiting State ---
         private static readonly int MaxRequests = 15;
@@ -43,12 +45,13 @@ namespace MediaVoyager.Clients
         private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
         private static readonly TimeSpan TooManyRequestsRetryDelay = TimeSpan.FromSeconds(6);
 
-        public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger)
+        public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger, IRequestLogCollector requestLogCollector)
         {
             _primaryApiKey = secretService.GetSecretValue("groq_api_key");
             _backupApiKey = secretService.GetSecretValue("groq_api_key_backup");
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _requestLogCollector = requestLogCollector;
         }
 
         public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
@@ -59,7 +62,7 @@ namespace MediaVoyager.Clients
                 {
                     await WaitForRateLimitSlotAsync();
 
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Groq][Movie] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
+                    Log($"[{DateTime.Now:HH:mm:ss}] [Groq][Movie] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
 
                     var requestBody = BuildGroqRequestForMovies(favoriteMovies, watchHistory, temperature);
                     var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
@@ -92,7 +95,7 @@ namespace MediaVoyager.Clients
                 {
                     await WaitForRateLimitSlotAsync();
 
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Groq][TV] Sending request for favorites: {string.Join(", ", favouriteTvShows.Take(2))}...");
+                    Log($"[{DateTime.Now:HH:mm:ss}] [Groq][TV] Sending request for favorites: {string.Join(", ", favouriteTvShows.Take(2))}...");
 
                     var requestBody = BuildGroqRequestForTvShows(favouriteTvShows, watchHistory, temperature);
                     var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
@@ -131,12 +134,12 @@ namespace MediaVoyager.Clients
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Rate limited (HTTP 429) (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
+                    Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Rate limited (HTTP 429) (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
 
                     if (!useBackupKey)
                     {
                         useBackupKey = true;
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Switching to backup API key for this request");
+                        Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Switching to backup API key for this request");
                     }
 
                     if (attempt == MaxRetryAttempts)
@@ -148,7 +151,7 @@ namespace MediaVoyager.Clients
                 }
                 catch (JsonException ex)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Error parsing Groq API response (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
+                    Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Error parsing Groq API response (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
 
                     if (attempt == MaxRetryAttempts)
                     {
@@ -159,7 +162,7 @@ namespace MediaVoyager.Clients
                 }
                 catch (HttpRequestException ex)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Error calling Groq API (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
+                    Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Error calling Groq API (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
 
                     if (attempt == MaxRetryAttempts)
                     {
@@ -170,7 +173,7 @@ namespace MediaVoyager.Clients
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {operationName} Exception in recommendation (attempt {attempt}/{MaxRetryAttempts}): {e.Message}\n{e.StackTrace}");
+                    Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Exception in recommendation (attempt {attempt}/{MaxRetryAttempts}): {e.Message}\n{e.StackTrace}");
 
                     if (attempt == MaxRetryAttempts)
                     {
@@ -216,7 +219,7 @@ namespace MediaVoyager.Clients
 
                     if (timeToWait > TimeSpan.Zero)
                     {
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Groq] Rate limit hit. Waiting for {timeToWait.TotalSeconds:F1} seconds...");
+                        Log($"[{DateTime.Now:HH:mm:ss}] [Groq] Rate limit hit. Waiting for {timeToWait.TotalSeconds:F1} seconds...");
                         await Task.Delay(timeToWait);
                     }
 
@@ -295,6 +298,12 @@ namespace MediaVoyager.Clients
             _httpClient?.Dispose();
             RateLimitSemaphore?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Log(string message)
+        {
+            Console.WriteLine(message);
+            _requestLogCollector?.AddLog(message);
         }
 
         #region DTOs
