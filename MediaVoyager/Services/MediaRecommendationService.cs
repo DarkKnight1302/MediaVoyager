@@ -302,7 +302,6 @@ namespace MediaVoyager.Services
                             FirstAirDate = tvShowTmdb.FirstAirDate,
                             TagLine = tvShowTmdb.Tagline,
                             Title = tvShowTmdb.Name,
-                            OriginalName = tvShowTmdb.OriginalName,
                             NumberOfSeasons = tvShowTmdb.NumberOfSeasons,
                             ImdbRating = await imdbRatingTask.ConfigureAwait(false)
                         };

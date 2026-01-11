@@ -20,8 +20,6 @@ namespace MediaVoyager.Models
 
         public string OverView { get; set; }
 
-        public string OriginalName { get; set; }
-
         public string ImdbRating { get; set; }
 
         public int NumberOfSeasons { get; set; }
