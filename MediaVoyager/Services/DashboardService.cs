@@ -11,15 +11,18 @@ namespace MediaVoyager.Services
     {
         private readonly IUserActivityRepository userActivityRepository;
         private readonly ICosmosDbService cosmosDbService;
+        private readonly IApiRequestLogRepository apiRequestLogRepository;
         private readonly ILogger<DashboardService> logger;
 
         public DashboardService(
             IUserActivityRepository userActivityRepository,
             ICosmosDbService cosmosDbService,
+            IApiRequestLogRepository apiRequestLogRepository,
             ILogger<DashboardService> logger)
         {
             this.userActivityRepository = userActivityRepository;
             this.cosmosDbService = cosmosDbService;
+            this.apiRequestLogRepository = apiRequestLogRepository;
             this.logger = logger;
         }
 
@@ -30,8 +33,9 @@ namespace MediaVoyager.Services
             var recommendationsTask = GetRecommendationMetricsAsync(days);
             var searchesTask = GetSearchMetricsAsync(days);
             var watchlistTask = GetWatchlistMetricsAsync(days);
+            var apiFailuresTask = GetApiFailureMetricsAsync(days);
 
-            await Task.WhenAll(signupsTask, activeUsersTask, recommendationsTask, searchesTask, watchlistTask);
+            await Task.WhenAll(signupsTask, activeUsersTask, recommendationsTask, searchesTask, watchlistTask, apiFailuresTask);
 
             return new DashboardMetrics
             {
@@ -39,8 +43,29 @@ namespace MediaVoyager.Services
                 ActiveUsers = await activeUsersTask,
                 Recommendations = await recommendationsTask,
                 Searches = await searchesTask,
-                Watchlist = await watchlistTask
+                Watchlist = await watchlistTask,
+                ApiFailures = await apiFailuresTask
             };
+        }
+
+        public async Task<ApiFailureMetrics> GetApiFailureMetricsAsync(int days = 30)
+        {
+            try
+            {
+                var now = DateTimeOffset.UtcNow;
+                var fromDate = now.AddDays(-days);
+
+                var failures = await apiRequestLogRepository.GetFailureCountsByApiAndDateAsync(fromDate, now);
+                return new ApiFailureMetrics
+                {
+                    FailuresByApiAndDate = failures
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting API failure metrics");
+                return new ApiFailureMetrics();
+            }
         }
 
         public async Task<UserSignupMetrics> GetUserSignupMetricsAsync(int days = 30)

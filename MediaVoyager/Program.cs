@@ -73,6 +73,7 @@ builder.Services.AddSingleton<IUserTvHistoryRepository, UserTvHistoryRepository>
 
 // Dashboard and activity tracking services
 builder.Services.AddSingleton<IUserActivityRepository, UserActivityRepository>();
+builder.Services.AddSingleton<IApiRequestLogRepository, ApiRequestLogRepository>();
 builder.Services.AddSingleton<IDashboardService, DashboardService>();
 
 // Error notification service
@@ -90,6 +91,8 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 app.UseRateLimiting();
+// record status codes for /api/* requests, used by dashboard analytics
+app.UseApiRequestLogging();
 var secretService = app.Services.GetService<ISecretService>();
 if (secretService != null)
 {

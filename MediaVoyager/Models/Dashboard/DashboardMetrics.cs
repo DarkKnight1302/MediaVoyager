@@ -7,6 +7,7 @@ namespace MediaVoyager.Models.Dashboard
    public RecommendationMetrics Recommendations { get; set; }
         public SearchMetrics Searches { get; set; }
         public WatchlistMetrics Watchlist { get; set; }
+        public ApiFailureMetrics ApiFailures { get; set; } = new();
     }
 
     public class UserSignupMetrics

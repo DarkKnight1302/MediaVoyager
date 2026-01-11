@@ -401,6 +401,12 @@ align-items: center;
         <canvas id="searchUsersChart"></canvas>
       </div>
           </div>
+          <div class="chart-card">
+            <h2>API Failures (Non-200) Day-wise</h2>
+            <div class="chart-container">
+                <canvas id="apiFailuresChart"></canvas>
+            </div>
+        </div>
      </div>
 
         <div class="last-updated" id="lastUpdated"></div>
@@ -410,37 +416,37 @@ align-items: center;
         // Chart instances
         let charts = {};
 
-    // Chart.js default configuration
+        // Chart.js default configuration
         Chart.defaults.color = 'rgba(255, 255, 255, 0.7)';
         Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
 
         const chartOptions = {
-   responsive: true,
+            responsive: true,
             maintainAspectRatio: false,
             plugins: {
-   legend: {
-         labels: {
-    color: 'rgba(255, 255, 255, 0.8)',
-      font: { size: 12 }
- }
+                legend: {
+                    labels: {
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        font: { size: 12 }
+                    }
                 }
-       },
- scales: {
- x: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-     ticks: { color: 'rgba(255, 255, 255, 0.6)' }
-   },
-            y: {
-             grid: { color: 'rgba(255, 255, 255, 0.05)' },
-      ticks: { color: 'rgba(255, 255, 255, 0.6)' },
-              beginAtZero: true
-          }
-        }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: 'rgba(255, 255, 255, 0.6)' }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: 'rgba(255, 255, 255, 0.6)' },
+                    beginAtZero: true
+                }
+            }
         };
 
         function formatDate(dateString) {
-          const date = new Date(dateString);
- return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
      function showError(message) {
@@ -521,6 +527,7 @@ align-items: center;
      );
    createWatchlistChart(data.watchlist?.watchlist_activity_by_date || []);
   createSearchUsersChart(data.searches?.unique_users_by_date || []);
+            createApiFailuresChart(data.api_failures?.failures_by_api_and_date || []);
         }
 
         function createSignupsChart(signupsData) {
@@ -700,6 +707,43 @@ datasets: [
           },
     options: chartOptions
          });
+        }
+
+        function createApiFailuresChart(failuresData) {
+            const ctx = document.getElementById('apiFailuresChart').getContext('2d');
+
+            const allDates = [...new Set(failuresData.map(d => d.date))].sort();
+            const apis = [...new Set(failuresData.map(d => d.api))].sort();
+
+            const palette = [
+                '#ff6b6b', '#4ecdc4', '#ffe66d', '#a29bfe', '#74b9ff',
+                '#55efc4', '#fd79a8', '#fab1a0', '#81ecec', '#e17055'
+            ];
+
+            const datasets = apis.map((api, idx) => {
+                const counts = allDates.map(date => {
+                    const item = failuresData.find(d => d.api === api && d.date === date);
+                    return item ? item.count : 0;
+                });
+
+                return {
+                    label: api,
+                    data: counts,
+                    borderColor: palette[idx % palette.length],
+                    backgroundColor: palette[idx % palette.length] + '33',
+                    fill: false,
+                    tension: 0.25
+                };
+            });
+
+            charts.apiFailures = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allDates.map(d => formatDate(d)),
+                    datasets
+                },
+                options: chartOptions
+            });
         }
 
  // Auto-refresh every 5 minutes
