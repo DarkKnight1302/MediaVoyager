@@ -51,10 +51,10 @@ builder.Host.ConfigureHostOptions(options =>
 {
     options.ShutdownTimeout = TimeSpan.FromSeconds(30);
 });
-builder.Services.AddSingleton<IGeminiRecommendationClient, GeminiRecommendationClient>();
-builder.Services.AddSingleton<IGroqRecommendationClient, GroqRecommendationClient>();
+builder.Services.AddScoped<IGeminiRecommendationClient, GeminiRecommendationClient>();
+builder.Services.AddScoped<IGroqRecommendationClient, GroqRecommendationClient>();
 builder.Services.AddSingleton<IOmdbClient, OmdbClient>();
-builder.Services.AddSingleton<MediaVoyager.Services.Interfaces.IRecommendationClientResolver, RecommendationClientResolver>();
+builder.Services.AddScoped<MediaVoyager.Services.Interfaces.IRecommendationClientResolver, RecommendationClientResolver>();
 builder.Services.AddSingleton<IRecommendationProviderService, RecommendationProviderService>();
 builder.Services.AddSingleton<IUserMoviesRepository, UserMoviesRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
