@@ -47,7 +47,7 @@ namespace MediaVoyager.Services
             this.httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<MovieResponse> GetMovieRecommendationForUser(string userId)
+        public async Task<MovieResponse> GetMovieRecommendationForUser(string userId, double temp = 0.9, int recurCount = 0)
         {
             Log($"[MediaRec][Movie] Start GetMovieRecommendationForUser userId={userId}");
             try
@@ -76,7 +76,7 @@ namespace MediaVoyager.Services
                 string movie = null;
                 string name = null;
                 int year = 0;
-                for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
+                for (double temperature = temp; temperature <= 2.0; temperature += 0.2)
                 {
                     movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, temperature);
                     Log($"[MediaRec][Movie] Recommendation (temp={temperature:F1}): '{movie}'");
@@ -138,6 +138,12 @@ namespace MediaVoyager.Services
                     }
 
                     int movieId = selectedMovie.Id;
+
+                    if (this.IsMovieIdInWatchHistory(userMovies.watchHistory, movieId.ToString()) && recurCount < 3)
+                    {
+                        return await GetMovieRecommendationForUser(userId, temp + 0.1, recurCount + 1);
+                    }
+
                     TMDbLib.Objects.Movies.Movie movieTmdb = await this.tmdbCacheService.GetMovieAsync(movieId);
                     Log(movieTmdb == null
                         ? "[MediaRec][Movie] tmdbCacheService returned null for movie"
@@ -179,7 +185,7 @@ namespace MediaVoyager.Services
             }
         }
 
-        public async Task<TvShowResponse> GetTvShowRecommendationForUser(string userId)
+        public async Task<TvShowResponse> GetTvShowRecommendationForUser(string userId, double temp = 0.9, int recurCount = 0)
         {
             Log($"[MediaRec][TV] Start GetTvShowRecommendationForUser userId={userId}");
             try
@@ -208,7 +214,7 @@ namespace MediaVoyager.Services
                 string tvShow = null;
                 string name = null;
                 int year = 0;
-                for (double temperature = 0.9; temperature <= 2.0; temperature += 0.2)
+                for (double temperature = temp; temperature <= 2.0; temperature += 0.2)
                 {
                     tvShow = await recClient.GetTvShowRecommendationAsync(favouriteTvShows, watchHistory, temperature);
                     Log($"[MediaRec][TV] Recommendation (temp={temperature:F1}): '{tvShow}'");
@@ -271,12 +277,19 @@ namespace MediaVoyager.Services
 
                     int tvShowId = selectedTvShow.Id;
                     Log($"[MediaRec][TV] Using top result tvShowId={tvShowId}");
+
+                    if (this.IsTvShowIdInWatchHistory(userTvShows.watchHistory, tvShowId.ToString()) && recurCount < 3)
+                    {
+                        return await GetTvShowRecommendationForUser(userId, temp + 0.1, recurCount+1);
+                    }
+
                     Task<TMDbLib.Objects.TvShows.TvShow> tvShowTask = this.tmdbCacheService.GetTvShowAsync(tvShowId);
                     Task<ExternalIdsTvShow> externalIdsTask = tmdbClient.GetTvShowExternalIdsAsync(tvShowId);
 
                     await Task.WhenAll(tvShowTask, externalIdsTask).ConfigureAwait(false);
 
                     TMDbLib.Objects.TvShows.TvShow tvShowTmdb = await tvShowTask.ConfigureAwait(false);
+
                     ExternalIdsTvShow externalIds = await externalIdsTask.ConfigureAwait(false);
 
                     Log(tvShowTmdb == null
@@ -356,6 +369,16 @@ namespace MediaVoyager.Services
         private bool IsMovieInWatchHistory(IEnumerable<Movie> watchHistory, string name, int year)
         {
             return watchHistory.Any(x => string.Equals(x.Title, name, StringComparison.OrdinalIgnoreCase) && x.ReleaseDate.HasValue && x.ReleaseDate.Value.Year == year);
+        }
+
+        private bool IsMovieIdInWatchHistory(IEnumerable<Movie> watchHistory, string id)
+        {
+            return watchHistory.Any(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool IsTvShowIdInWatchHistory(IEnumerable<TvShow> watchHistory, string id)
+        {
+            return watchHistory.Any(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
         }
 
         private bool IsTvShowInWatchHistory(IEnumerable<TvShow> watchHistory, string name, int year)
