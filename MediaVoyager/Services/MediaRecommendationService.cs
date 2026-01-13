@@ -132,8 +132,11 @@ namespace MediaVoyager.Services
                     SearchMovie selectedMovie = results[0];
                     if (results.Count > 1 && results[1].Popularity > results[0].Popularity && retryWithoutYear)
                     {
-                        selectedMovie = results[1];
-                        Log($"[MediaRec][Movie] Selected second result (more popular): movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity} vs first result popularity={results[0].Popularity}");
+                        if (results[1].Title.Equals(name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            selectedMovie = results[1];
+                            Log($"[MediaRec][Movie] Selected second result (more popular): movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity} vs first result popularity={results[0].Popularity}");
+                        }
                     }
                     else
                     {
@@ -273,8 +276,11 @@ namespace MediaVoyager.Services
                     SearchTv selectedTvShow = results[0];
                     if (results.Count > 1 && results[1].Popularity > results[0].Popularity && retryWithoutYear)
                     {
-                        selectedTvShow = results[1];
-                        Log($"[MediaRec][TV] Selected second result (more popular): tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity} vs first result popularity={results[0].Popularity}");
+                        if (results[1].Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            selectedTvShow = results[1];
+                            Log($"[MediaRec][TV] Selected second result (more popular): tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity} vs first result popularity={results[0].Popularity}");
+                        }
                     }
                     else
                     {
