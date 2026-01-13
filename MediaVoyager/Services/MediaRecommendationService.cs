@@ -115,11 +115,14 @@ namespace MediaVoyager.Services
                 List<SearchMovie> results = searchContainer.Results;
                 Log($"[MediaRec][Movie] Search results with year: count={(results?.Count ??0)}");
 
+                bool retryWithoutYear = false;
+
                 if (results == null || results.Count ==0)
                 {
                     Log("[MediaRec][Movie] No results with year filter, retrying without year");
                     searchContainer = await tmdbClient.SearchMovieAsync(name,0).ConfigureAwait(false);
                     results = searchContainer.Results;
+                    retryWithoutYear = true;
                     Log($"[MediaRec][Movie] Search results without year: count={(results?.Count ??0)}");
                 }
 
@@ -127,7 +130,7 @@ namespace MediaVoyager.Services
                 {
                     // Compare top two results for popularity and use the more popular one
                     SearchMovie selectedMovie = results[0];
-                    if (results.Count > 1 && results[1].Popularity > results[0].Popularity)
+                    if (results.Count > 1 && results[1].Popularity > results[0].Popularity && retryWithoutYear)
                     {
                         selectedMovie = results[1];
                         Log($"[MediaRec][Movie] Selected second result (more popular): movieId={selectedMovie.Id}, popularity={selectedMovie.Popularity} vs first result popularity={results[0].Popularity}");
@@ -252,12 +255,15 @@ namespace MediaVoyager.Services
                 SearchContainer<SearchTv> searchContainer = await tmdbClient.SearchTvShowAsync(name,0, false, year).ConfigureAwait(false);
 
                 List<SearchTv> results = searchContainer.Results;
+
+                bool retryWithoutYear = false;
                 Log($"[MediaRec][TV] Search results with year: count={(results?.Count ??0)}");
                 if (results == null || results.Count ==0)
                 {
                     Log("[MediaRec][TV] No results with year filter, retrying without year");
                     searchContainer = await tmdbClient.SearchTvShowAsync(name,0).ConfigureAwait(false);
                     results = searchContainer.Results;
+                    retryWithoutYear = true;
                     Log($"[MediaRec][TV] Search results without year: count={(results?.Count ??0)}");
                 }
 
@@ -265,7 +271,7 @@ namespace MediaVoyager.Services
                 {
                     // Compare top two results for popularity and use the more popular one
                     SearchTv selectedTvShow = results[0];
-                    if (results.Count > 1 && results[1].Popularity > results[0].Popularity)
+                    if (results.Count > 1 && results[1].Popularity > results[0].Popularity && retryWithoutYear)
                     {
                         selectedTvShow = results[1];
                         Log($"[MediaRec][TV] Selected second result (more popular): tvShowId={selectedTvShow.Id}, popularity={selectedTvShow.Popularity} vs first result popularity={results[0].Popularity}");
