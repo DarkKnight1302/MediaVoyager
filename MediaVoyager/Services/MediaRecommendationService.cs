@@ -176,6 +176,10 @@ namespace MediaVoyager.Services
                 }
                 else
                 {
+                    if (recurCount < 4)
+                    {
+                        return await GetMovieRecommendationForUser(userId, temp + 0.1, recurCount + 1);
+                    }
                     Log("[MediaRec][Movie] Returning null because no search results were found");
                 }
                 return null;
@@ -337,6 +341,10 @@ namespace MediaVoyager.Services
                 }
                 else
                 {
+                    if (recurCount < 4)
+                    {
+                        return await GetTvShowRecommendationForUser(userId, temp + 0.1, recurCount + 1);
+                    }
                     Log("[MediaRec][TV] Returning null because no search results were found");
                 }
                 return null;
