@@ -25,18 +25,6 @@ namespace MediaVoyager.Controllers
             this.userActivityRepository = userActivityRepository;
         }
 
-        [HttpGet]
-        public IActionResult Get()
-        {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "1234")
-            };
-
-            string token = this.tokenService.GenerateToken(claims, GlobalConstant.Issuer, "MediaVoyagerClient", 2);
-            return Ok(token);
-        }
-
         [HttpPost("verify-otp")]
         [RateLimit(6, 1)]
         public async Task<IActionResult> VerifyOtp(VerifyOtpRequest verifyOtpRequest)
