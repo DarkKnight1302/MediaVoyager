@@ -71,6 +71,9 @@ namespace MediaVoyager.Services
                 Log($"[MediaRec][Movie] favouriteMovies(count={favouriteMovies.Count}) sample=[{string.Join(", ", favouriteMovies.Take(3))}]...");
                 Log($"[MediaRec][Movie] watchHistory(count={watchHistory.Count}) sample=[{string.Join(", ", watchHistory.Take(3))}]...");
 
+                // Limit watch history to last 130 movies before calling recommendation client
+                List<string> recentWatchHistory = watchHistory.TakeLast(130).ToList();
+
                 IRecommendationClient recClient = GetRecommendationClient();
 
                 string movie = null;
@@ -78,7 +81,7 @@ namespace MediaVoyager.Services
                 int year = 0;
                 for (double temperature = temp; temperature <= 2.0; temperature += 0.2)
                 {
-                    movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, watchHistory, temperature);
+                    movie = await recClient.GetMovieRecommendationAsync(favouriteMovies, recentWatchHistory, temperature);
                     Log($"[MediaRec][Movie] Recommendation (temp={temperature:F1}): '{movie}'");
                     if (string.IsNullOrEmpty(movie))
                     {
