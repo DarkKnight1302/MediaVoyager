@@ -1,5 +1,6 @@
-﻿using MediaVoyager.Constants;
+using MediaVoyager.Constants;
 using MediaVoyager.Repositories;
+using NewHorizonLib.Services;
 using NewHorizonLib.Services.Interfaces;
 using System.Security.Claims;
 
@@ -7,14 +8,14 @@ namespace MediaVoyager.Handlers
 {
     public class SignInHandler : ISignInHandler
     {
-        private readonly IEmailService _emailService;
+        private readonly ResendEmailService _emailService;
         private readonly IOtpService _otpService;
         private readonly ITokenService _tokenService;
         private readonly IUserRepository _userRepository;
         private readonly IUserMoviesRepository _userMoviesRepository;
         private readonly IUserTvRepository _userTvRepository;
 
-        public SignInHandler(IEmailService emailService,
+        public SignInHandler(ResendEmailService emailService,
             IOtpService otpService,
             ITokenService tokenService,
             IUserRepository userRepository,

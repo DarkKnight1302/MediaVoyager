@@ -1,18 +1,18 @@
-﻿using MediaVoyager.Services.Interfaces;
-using NewHorizonLib.Services.Interfaces;
+using MediaVoyager.Services.Interfaces;
+using NewHorizonLib.Services;
 using System.Web;
 
 namespace MediaVoyager.Services
 {
     public class ErrorNotificationService : IErrorNotificationService
     {
-        private readonly IEmailService _emailService;
+        private readonly ResendEmailService _emailService;
         private readonly ILogger<ErrorNotificationService> _logger;
         private const string NotificationEmail = "mediavoyager.in@gmail.com";
         private const string SenderName = "MediaVoyager Alert";
         private const string FromEmail = "noreply@mediavoyager.in";
 
-        public ErrorNotificationService(IEmailService emailService, ILogger<ErrorNotificationService> logger)
+        public ErrorNotificationService(ResendEmailService emailService, ILogger<ErrorNotificationService> logger)
         {
             _emailService = emailService;
             _logger = logger;
