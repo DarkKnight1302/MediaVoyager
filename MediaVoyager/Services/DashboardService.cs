@@ -34,8 +34,15 @@ namespace MediaVoyager.Services
             var searchesTask = GetSearchMetricsAsync(days);
             var watchlistTask = GetWatchlistMetricsAsync(days);
             var apiFailuresTask = GetApiFailureMetricsAsync(days);
+            var loginsTask = GetLoginMetricsAsync(days);
+            var favouritesTask = GetFavouritesMetricsAsync(days);
+            var engagementTask = GetContentEngagementMetricsAsync(days);
+            var retentionTask = GetUserRetentionMetricsAsync(days);
 
-            await Task.WhenAll(signupsTask, activeUsersTask, recommendationsTask, searchesTask, watchlistTask, apiFailuresTask);
+            await Task.WhenAll(
+                signupsTask, activeUsersTask, recommendationsTask, 
+                searchesTask, watchlistTask, apiFailuresTask,
+                loginsTask, favouritesTask, engagementTask, retentionTask);
 
             return new DashboardMetrics
             {
@@ -44,7 +51,11 @@ namespace MediaVoyager.Services
                 Recommendations = await recommendationsTask,
                 Searches = await searchesTask,
                 Watchlist = await watchlistTask,
-                ApiFailures = await apiFailuresTask
+                ApiFailures = await apiFailuresTask,
+                Logins = await loginsTask,
+                Favourites = await favouritesTask,
+                ContentEngagement = await engagementTask,
+                Retention = await retentionTask
             };
         }
 
@@ -65,6 +76,182 @@ namespace MediaVoyager.Services
             {
                 logger.LogError(ex, "Error getting API failure metrics");
                 return new ApiFailureMetrics();
+            }
+        }
+
+        public async Task<LoginMetrics> GetLoginMetricsAsync(int days = 30)
+        {
+            try
+            {
+                var now = DateTimeOffset.UtcNow;
+                var fromDate = now.AddDays(-days);
+
+                var logins = await userActivityRepository.GetActivityCountByDateAsync(
+                    ActivityTypes.Login, fromDate, now);
+                
+                var uniqueUsers = await userActivityRepository.GetUniqueUsersWithActivityAsync(
+                    ActivityTypes.Login, fromDate, now);
+
+                return new LoginMetrics
+                {
+                    TotalLogins = logins.Values.Sum(),
+                    UniqueUsersLoggedIn = uniqueUsers,
+                    LoginsByDate = logins
+                        .Select(kvp => new DateCount { Date = kvp.Key, Count = kvp.Value })
+                        .OrderBy(x => x.Date)
+                        .ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting login metrics");
+                return new LoginMetrics();
+            }
+        }
+
+        public async Task<FavouritesMetrics> GetFavouritesMetricsAsync(int days = 30)
+        {
+            try
+            {
+                var now = DateTimeOffset.UtcNow;
+                var fromDate = now.AddDays(-days);
+
+                var movieFavourites = await userActivityRepository.GetActivityCountByDateAsync(
+                    ActivityTypes.AddMovieToFavourites, fromDate, now);
+                var tvFavourites = await userActivityRepository.GetActivityCountByDateAsync(
+                    ActivityTypes.AddTvToFavourites, fromDate, now);
+
+                var movieFavActivities = await userActivityRepository.GetActivitiesByTypeAsync(
+                    ActivityTypes.AddMovieToFavourites, fromDate, now);
+                var tvFavActivities = await userActivityRepository.GetActivitiesByTypeAsync(
+                    ActivityTypes.AddTvToFavourites, fromDate, now);
+
+                var uniqueUsers = movieFavActivities.Select(a => a.UserId)
+                    .Union(tvFavActivities.Select(a => a.UserId))
+                    .Distinct()
+                    .Count();
+
+                return new FavouritesMetrics
+                {
+                    TotalMovieFavourites = movieFavourites.Values.Sum(),
+                    TotalTvFavourites = tvFavourites.Values.Sum(),
+                    UniqueUsersWithFavourites = uniqueUsers,
+                    MovieFavouritesByDate = movieFavourites
+                        .Select(kvp => new DateCount { Date = kvp.Key, Count = kvp.Value })
+                        .OrderBy(x => x.Date)
+                        .ToList(),
+                    TvFavouritesByDate = tvFavourites
+                        .Select(kvp => new DateCount { Date = kvp.Key, Count = kvp.Value })
+                        .OrderBy(x => x.Date)
+                        .ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting favourites metrics");
+                return new FavouritesMetrics();
+            }
+        }
+
+        public async Task<ContentEngagementMetrics> GetContentEngagementMetricsAsync(int days = 30)
+        {
+            try
+            {
+                var now = DateTimeOffset.UtcNow;
+                var fromDate = now.AddDays(-days);
+
+                var allActivities = await userActivityRepository.GetActivitiesAsync(fromDate, now);
+                var totalActions = allActivities.Count;
+
+                var uniqueUsers = allActivities.Select(a => a.UserId).Distinct().Count();
+                var avgActions = uniqueUsers > 0 ? (double)totalActions / uniqueUsers : 0;
+
+                var engagementByType = allActivities
+                    .GroupBy(a => a.ActivityType)
+                    .Select(g => new EngagementByType { Type = g.Key, Count = g.Count() })
+                    .OrderByDescending(x => x.Count)
+                    .ToList();
+
+                var movieActions = allActivities.Count(a => 
+                    a.ActivityType == ActivityTypes.MovieSearch || 
+                    a.ActivityType == ActivityTypes.MovieRecommendation ||
+                    a.ActivityType == ActivityTypes.AddMovieToWatchlist ||
+                    a.ActivityType == ActivityTypes.AddMovieToFavourites);
+
+                var tvActions = allActivities.Count(a => 
+                    a.ActivityType == ActivityTypes.TvSearch || 
+                    a.ActivityType == ActivityTypes.TvRecommendation ||
+                    a.ActivityType == ActivityTypes.AddTvToWatchlist ||
+                    a.ActivityType == ActivityTypes.AddTvToFavourites);
+
+                var totalContentActions = movieActions + tvActions;
+                var moviePct = totalContentActions > 0 ? Math.Round((double)movieActions / totalContentActions * 100, 1) : 0;
+                var tvPct = totalContentActions > 0 ? Math.Round((double)tvActions / totalContentActions * 100, 1) : 0;
+
+                var signups = await GetUserSignupMetricsAsync(days);
+
+                return new ContentEngagementMetrics
+                {
+                    TotalActions = totalActions,
+                    AvgActionsPerUser = Math.Round(avgActions, 2),
+                    MoviePercentage = moviePct,
+                    TvPercentage = tvPct,
+                    NewUsersInPeriod = signups.SignupsByDate.Sum(x => x.Count),
+                    EngagementByType = engagementByType
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting content engagement metrics");
+                return new ContentEngagementMetrics();
+            }
+        }
+
+        public async Task<UserRetentionMetrics> GetUserRetentionMetricsAsync(int days = 30)
+        {
+            try
+            {
+                var now = DateTimeOffset.UtcNow;
+                var fromDate = now.AddDays(-days);
+
+                var allActivities = await userActivityRepository.GetActivitiesAsync(fromDate, now);
+                var signups = await GetUserSignupMetricsAsync(days);
+                var totalUsers = signups.TotalUsers;
+
+                var uniqueActiveUsers = allActivities.Select(a => a.UserId).Distinct().Count();
+                var retentionRate = totalUsers > 0 ? Math.Round((double)uniqueActiveUsers / totalUsers * 100, 1) : 0;
+
+                // Users active on 2+ distinct days in the period
+                var usersWithMultipleDays = allActivities
+                    .GroupBy(a => a.UserId)
+                    .Where(g => g.Select(a => a.ActivityDate.Date).Distinct().Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
+
+                // Returning users by date (active today, and active on at least 1 previous day in period)
+                var returningUsersByDate = allActivities
+                    .GroupBy(a => a.ActivityDate.Date)
+                    .Select(dateGroup => new DateCount
+                    {
+                        Date = dateGroup.Key,
+                        Count = dateGroup.Select(a => a.UserId)
+                                         .Distinct()
+                                         .Count(uid => usersWithMultipleDays.Contains(uid))
+                    })
+                    .OrderBy(x => x.Date)
+                    .ToList();
+
+                return new UserRetentionMetrics
+                {
+                    RetentionRate = retentionRate,
+                    ReturningUsers = usersWithMultipleDays.Count,
+                    ReturningUsersByDate = returningUsersByDate
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting user retention metrics");
+                return new UserRetentionMetrics();
             }
         }
 
@@ -209,6 +396,15 @@ namespace MediaVoyager.Services
                    .OrderBy(x => x.Date)
                       .ToList();
 
+                // Top Searched Items
+                var topSearchedItems = allSearchActivities
+                    .Where(a => !string.IsNullOrEmpty(a.Details))
+                    .GroupBy(a => a.Details.ToLower().Trim())
+                    .Select(g => new TopSearchedItem { Keyword = g.Key, Count = g.Count() })
+                    .OrderByDescending(x => x.Count)
+                    .Take(10)
+                    .ToList();
+
                 return new SearchMetrics
                 {
                     TotalMovieSearches = movieSearches.Values.Sum(),
@@ -222,7 +418,8 @@ namespace MediaVoyager.Services
                     .Select(kvp => new DateCount { Date = kvp.Key, Count = kvp.Value })
                     .OrderBy(x => x.Date)
                     .ToList(),
-                    UniqueUsersByDate = uniqueUsersByDate
+                    UniqueUsersByDate = uniqueUsersByDate,
+                    TopSearchedItems = topSearchedItems
                 };
             }
             catch (Exception ex)

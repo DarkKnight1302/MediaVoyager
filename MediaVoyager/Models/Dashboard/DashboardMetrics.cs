@@ -8,6 +8,10 @@ namespace MediaVoyager.Models.Dashboard
         public SearchMetrics Searches { get; set; }
         public WatchlistMetrics Watchlist { get; set; }
         public ApiFailureMetrics ApiFailures { get; set; } = new();
+        public LoginMetrics Logins { get; set; }
+        public FavouritesMetrics Favourites { get; set; }
+        public ContentEngagementMetrics ContentEngagement { get; set; }
+        public UserRetentionMetrics Retention { get; set; }
     }
 
     public class UserSignupMetrics
@@ -39,6 +43,7 @@ namespace MediaVoyager.Models.Dashboard
      public List<DateCount> MovieSearchesByDate { get; set; } = new List<DateCount>();
         public List<DateCount> TvSearchesByDate { get; set; } = new List<DateCount>();
   public List<DateCount> UniqueUsersByDate { get; set; } = new List<DateCount>();
+        public List<TopSearchedItem> TopSearchedItems { get; set; } = new List<TopSearchedItem>();
     }
 
     public class WatchlistMetrics

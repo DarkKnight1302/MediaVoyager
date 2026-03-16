@@ -11,5 +11,9 @@ namespace MediaVoyager.Services.Interfaces
         Task<SearchMetrics> GetSearchMetricsAsync(int days = 30);
         Task<WatchlistMetrics> GetWatchlistMetricsAsync(int days = 30);
         Task<ApiFailureMetrics> GetApiFailureMetricsAsync(int days = 30);
+        Task<LoginMetrics> GetLoginMetricsAsync(int days = 30);
+        Task<FavouritesMetrics> GetFavouritesMetricsAsync(int days = 30);
+        Task<ContentEngagementMetrics> GetContentEngagementMetricsAsync(int days = 30);
+        Task<UserRetentionMetrics> GetUserRetentionMetricsAsync(int days = 30);
     }
 }

@@ -126,5 +126,76 @@ namespace MediaVoyager.Controllers
                 return StatusCode(500, "Error retrieving watchlist metrics");
             }
         }
+        /// <summary>
+        /// Get login metrics
+        /// </summary>
+        [HttpGet("logins")]
+        public async Task<ActionResult<LoginMetrics>> GetLoginMetrics([FromQuery] int days = 30)
+        {
+            try
+            {
+                var metrics = await dashboardService.GetLoginMetricsAsync(days);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting login metrics");
+                return StatusCode(500, "Error retrieving login metrics");
+            }
+        }
+
+        /// <summary>
+        /// Get favourites metrics
+        /// </summary>
+        [HttpGet("favourites")]
+        public async Task<ActionResult<FavouritesMetrics>> GetFavouritesMetrics([FromQuery] int days = 30)
+        {
+            try
+            {
+                var metrics = await dashboardService.GetFavouritesMetricsAsync(days);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting favourites metrics");
+                return StatusCode(500, "Error retrieving favourites metrics");
+            }
+        }
+
+        /// <summary>
+        /// Get content engagement metrics
+        /// </summary>
+        [HttpGet("engagement")]
+        public async Task<ActionResult<ContentEngagementMetrics>> GetContentEngagementMetrics([FromQuery] int days = 30)
+        {
+            try
+            {
+                var metrics = await dashboardService.GetContentEngagementMetricsAsync(days);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting content engagement metrics");
+                return StatusCode(500, "Error retrieving content engagement metrics");
+            }
+        }
+
+        /// <summary>
+        /// Get user retention metrics
+        /// </summary>
+        [HttpGet("retention")]
+        public async Task<ActionResult<UserRetentionMetrics>> GetUserRetentionMetrics([FromQuery] int days = 30)
+        {
+            try
+            {
+                var metrics = await dashboardService.GetUserRetentionMetricsAsync(days);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting user retention metrics");
+                return StatusCode(500, "Error retrieving user retention metrics");
+            }
+        }
     }
 }
