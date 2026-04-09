@@ -254,7 +254,7 @@ namespace MediaVoyager.Clients
                 Temperature = temperature,
                 TopP = 1,
                 Stream = false,
-                ReasoningEffort = "high",
+                ReasoningEffort = "default",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -280,7 +280,7 @@ namespace MediaVoyager.Clients
                 Temperature = temperature,
                 TopP = 1,
                 Stream = false,
-                ReasoningEffort = "high",
+                ReasoningEffort = "default",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -339,7 +339,7 @@ namespace MediaVoyager.Clients
                 Temperature = 0.3,
                 TopP = 1,
                 Stream = false,
-                ReasoningEffort = "high",
+                ReasoningEffort = "default",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -381,7 +381,7 @@ namespace MediaVoyager.Clients
 
             [JsonPropertyName("include_reasoning")] public bool IncludeReasoning { get; set; } = false;
 
-            [JsonPropertyName("reasoning_effort")] public string ReasoningEffort { get; set; } = "high";
+            [JsonPropertyName("reasoning_effort")] public string ReasoningEffort { get; set; } = "default";
 
         }
 
