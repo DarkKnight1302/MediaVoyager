@@ -38,7 +38,7 @@ namespace MediaVoyager.Clients
         private static int DailyRequestCount = 0;
 
         private const string GroqChatCompletionsUrl = "https://api.groq.com/openai/v1/chat/completions";
-        private const string DefaultModel = "openai/gpt-oss-120b";
+        private const string DefaultModel = "qwen/qwen3-32b";
 
         // --- Retry ---
         private const int MaxRetryAttempts = 5;
