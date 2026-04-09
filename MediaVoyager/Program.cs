@@ -79,6 +79,11 @@ builder.Services.AddSingleton<IDashboardService, DashboardService>();
 // Error notification service
 builder.Services.AddSingleton<IErrorNotificationService, ErrorNotificationService>();
 
+// Watch history cleanup background service (daily cron job)
+builder.Services.AddSingleton<WatchHistoryCleanupService>();
+builder.Services.AddSingleton<IWatchHistoryCleanupService>(sp => sp.GetRequiredService<WatchHistoryCleanupService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<WatchHistoryCleanupService>());
+
 // Request-scoped log collector for capturing logs during HTTP requests
 builder.Services.AddScoped<IRequestLogCollector, RequestLogCollector>();
 // MediaRecommendationService uses IHttpContextAccessor to resolve scoped IRequestLogCollector at runtime

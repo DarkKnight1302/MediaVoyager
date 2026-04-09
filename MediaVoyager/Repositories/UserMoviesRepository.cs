@@ -84,6 +84,26 @@ namespace MediaVoyager.Repositories
             await container.UpsertItemAsync<UserMovies>(userMovies, new PartitionKey(userId));
         }
 
+        public async Task<List<string>> GetUserIdsWithLargeWatchHistory(int threshold)
+        {
+            var container = GetContainer();
+            var query = new QueryDefinition("SELECT c.id FROM c WHERE ARRAY_LENGTH(c.watchHistory) > @threshold")
+                .WithParameter("@threshold", threshold);
+            var userIds = new List<string>();
+            using var iterator = container.GetItemQueryIterator<UserIdProjection>(query);
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                userIds.AddRange(response.Select(u => u.id));
+            }
+            return userIds;
+        }
+
+        private class UserIdProjection
+        {
+            public string id { get; set; }
+        }
+
         private Container GetContainer()
         {
             return this.cosmosDbService.GetContainer("UserMovies");

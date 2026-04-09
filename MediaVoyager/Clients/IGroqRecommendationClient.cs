@@ -8,5 +8,7 @@ namespace MediaVoyager.Clients
         public Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature);
 
         public Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, double temperature);
+
+        Task<string> GetIrrelevantMovieFromHistoryAsync(List<string> favoriteMovies, List<string> watchHistory);
     }
 }

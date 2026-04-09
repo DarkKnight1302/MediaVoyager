@@ -293,6 +293,65 @@ namespace MediaVoyager.Clients
             };
         }
 
+        public async Task<string> GetIrrelevantMovieFromHistoryAsync(List<string> favoriteMovies, List<string> watchHistory)
+        {
+            return await ExecuteWithRetryAsync(
+                operationName: "[Groq][Cleanup]",
+                operation: async (apiKey) =>
+                {
+                    await WaitForRateLimitSlotAsync();
+
+                    Log($"[{DateTime.Now:HH:mm:ss}] [Groq][Cleanup] Identifying irrelevant movie from {watchHistory.Count} history items");
+
+                    var requestBody = BuildGroqRequestForIrrelevantMovie(favoriteMovies, watchHistory);
+                    var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    });
+
+                    using var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
+                    {
+                        Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+                    };
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+                    var response = await _httpClient.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
+
+                    return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
+                });
+        }
+
+        private ChatCompletionsRequest BuildGroqRequestForIrrelevantMovie(List<string> favoriteMovies, List<string> watchHistory)
+        {
+            Func<List<string>, string> formatList = items => $"[`{string.Join("`, `", items.Select(m => m.Replace("`", "\\`")))}`]";
+
+            string prompt1 = $"Favourite Movies : {formatList(favoriteMovies)}";
+            string prompt2 = $"Watch history : {formatList(watchHistory)}";
+
+            return new ChatCompletionsRequest
+            {
+                Model = DefaultModel,
+                Temperature = 0.3,
+                TopP = 1,
+                Stream = false,
+                ReasoningEffort = "high",
+                Messages = new List<ChatMessage>
+                {
+                    new ChatMessage
+                    {
+                        Role = "system",
+                        Content = "You are a movie taste analyst. Given a user's favourite movies and their watch history, identify the ONE movie from the watch history that is most irrelevant to the user's taste (based on favourites). Pick the movie that least fits the patterns in the user's favourites. Your output must be EXACTLY the movie entry as it appears in the watch history list, in the format `Movie Name (Year)`. Output only that single line, nothing else."
+                    },
+                    new ChatMessage { Role = "user", Content = $"{prompt1}\n{prompt2}" }
+                }
+            };
+        }
+
         public void Dispose()
         {
             _httpClient?.Dispose();
