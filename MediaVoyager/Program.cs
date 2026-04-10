@@ -12,6 +12,7 @@ using TMDbLib.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Microsoft.Extensions.FileProviders;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,10 +80,21 @@ builder.Services.AddSingleton<IDashboardService, DashboardService>();
 // Error notification service
 builder.Services.AddSingleton<IErrorNotificationService, ErrorNotificationService>();
 
-// Watch history cleanup background service (daily cron job)
-builder.Services.AddSingleton<WatchHistoryCleanupService>();
-builder.Services.AddSingleton<IWatchHistoryCleanupService>(sp => sp.GetRequiredService<WatchHistoryCleanupService>());
-builder.Services.AddHostedService(sp => sp.GetRequiredService<WatchHistoryCleanupService>());
+// Watch history cleanup service
+builder.Services.AddSingleton<IWatchHistoryCleanupService, WatchHistoryCleanupService>();
+
+// Quartz scheduler for background jobs
+builder.Services.AddQuartz(q =>
+{
+    var jobKey = new Quartz.JobKey("WatchHistoryCleanupJob");
+    q.AddJob<WatchHistoryCleanupJob>(opts => opts.WithIdentity(jobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("WatchHistoryCleanupTrigger")
+        .StartAt(Quartz.DateBuilder.FutureDate(5, Quartz.IntervalUnit.Minute))
+        .WithCronSchedule("0 0 3 * * ?"));
+});
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 // Request-scoped log collector for capturing logs during HTTP requests
 builder.Services.AddScoped<IRequestLogCollector, RequestLogCollector>();

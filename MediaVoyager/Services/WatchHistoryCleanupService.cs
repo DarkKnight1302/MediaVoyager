@@ -6,10 +6,9 @@ using MediaVoyager.Services.Interfaces;
 
 namespace MediaVoyager.Services
 {
-    public class WatchHistoryCleanupService : BackgroundService, IWatchHistoryCleanupService
+    public class WatchHistoryCleanupService : IWatchHistoryCleanupService
     {
         private const int WatchHistoryThreshold = 130;
-        private static readonly TimeSpan RunInterval = TimeSpan.FromHours(24);
 
         private readonly IUserMoviesRepository userMoviesRepository;
         private readonly IUserMovieHistoryRepository userMovieHistoryRepository;
@@ -28,29 +27,7 @@ namespace MediaVoyager.Services
             this.logger = logger;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            // Wait a bit after startup before running the first cleanup
-            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
-
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                try
-                {
-                    logger.LogInformation("[WatchHistoryCleanup] Starting daily cleanup run");
-                    await RunCleanupAsync(stoppingToken);
-                    logger.LogInformation("[WatchHistoryCleanup] Daily cleanup run completed");
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    logger.LogError(ex, "[WatchHistoryCleanup] Error during cleanup run");
-                }
-
-                await Task.Delay(RunInterval, stoppingToken);
-            }
-        }
-
-        private async Task RunCleanupAsync(CancellationToken stoppingToken)
+        public async Task RunCleanupAsync(CancellationToken stoppingToken = default)
         {
             List<string> userIds = await userMoviesRepository.GetUserIdsWithLargeWatchHistory(WatchHistoryThreshold);
             logger.LogInformation("[WatchHistoryCleanup] Found {Count} users with >{Threshold} movies in watch history",
