@@ -238,7 +238,7 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
-                MaxTokens = 6000,
+                MaxTokens = 4000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -265,7 +265,7 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
-                MaxTokens = 6000,
+                MaxTokens = 4000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -348,7 +348,7 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = 0.3,
-                MaxTokens = 6000,
+                MaxTokens = 4000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -449,4 +449,5 @@ namespace MediaVoyager.Clients
         }
     }
 }
+
 
