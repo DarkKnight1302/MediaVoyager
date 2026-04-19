@@ -11,6 +11,7 @@ using TMDbLib.Objects.Movies;
 using TMDbLib.Objects.Search;
 using TMDbLib.Objects.TvShows;
 using Microsoft.AspNetCore.Http;
+using System.Text.RegularExpressions;
 using Movie = MediaVoyager.Models.Movie;
 using TvShow = MediaVoyager.Models.TvShow;
 
@@ -18,6 +19,18 @@ namespace MediaVoyager.Services
 {
     public class MediaRecommendationService : IMediaRecommendationService
     {
+        private static readonly Regex RecommendationWithParenthesizedYearRegex = new(
+            @"^(?<name>.+?)\s*\((?<year>\d{4})\)\s*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex RecommendationWithSeparatedYearRegex = new(
+            @"^(?<name>.+?)\s*[-–,:]\s*(?<year>\d{4})\s*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex RecommendationYearRegex = new(
+            @"\b(?<year>(18|19|20)\d{2})\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         private readonly IUserMoviesRepository userMoviesRepository;
         private readonly IUserTvRepository userTvRepository;
         private readonly string tmdbApiKey;
@@ -86,11 +99,13 @@ namespace MediaVoyager.Services
                         continue;
                     }
 
-                    string[] movieParts = movie.Split('\n');
-                    name = movieParts[0];
-                    name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
-                    year = int.Parse(movieParts[1]);
-                    name = name.Trim();
+                    if (!TryParseRecommendation(movie, out name, out year))
+                    {
+                        Log($"[MediaRec][Movie] Could not parse recommendation '{movie}', retrying with higher temperature");
+                        movie = null;
+                        continue;
+                    }
+
                     Log($"[MediaRec][Movie] Parsed recommendation name='{name}', year={year}");
 
                     // Check if the recommended movie already exists in watch history
@@ -234,11 +249,13 @@ namespace MediaVoyager.Services
                         continue;
                     }
 
-                    string[] tvShowParts = tvShow.Split('\n');
-                    name = tvShowParts[0];
-                    name = name.Replace('\u202F', ' ').Replace('\u00A0', ' ');
-                    year = int.Parse(tvShowParts[1]);
-                    name = name.Trim();
+                    if (!TryParseRecommendation(tvShow, out name, out year))
+                    {
+                        Log($"[MediaRec][TV] Could not parse recommendation '{tvShow}', retrying with higher temperature");
+                        tvShow = null;
+                        continue;
+                    }
+
                     Log($"[MediaRec][TV] Parsed recommendation name='{name}', year={year}");
 
                     // Check if the recommended TV show already exists in watch history
@@ -384,6 +401,132 @@ namespace MediaVoyager.Services
         private string ConvertToEasyName(TvShow tvShow)
         {
             return $"{tvShow.Title} ({tvShow.FirstAirDate.Value.Year})";
+        }
+
+        private static bool TryParseRecommendation(string recommendation, out string name, out int year)
+        {
+            name = null;
+            year = 0;
+
+            if (string.IsNullOrWhiteSpace(recommendation))
+            {
+                return false;
+            }
+
+            string normalizedRecommendation = recommendation
+                .Replace('\u202F', ' ')
+                .Replace('\u00A0', ' ')
+                .Trim();
+
+            string[] lines = normalizedRecommendation
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(CleanRecommendationLine)
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToArray();
+
+            if (lines.Length == 0)
+            {
+                return false;
+            }
+
+            if (TryParseTitleAndYearFromSingleLine(lines[0], out name, out year))
+            {
+                return true;
+            }
+
+            if (lines.Length > 1 && TryParseYear(lines[1], out year))
+            {
+                name = CleanRecommendationTitle(lines[0]);
+                return !string.IsNullOrWhiteSpace(name);
+            }
+
+            if (TryParseTitleAndYearFromSingleLine(CleanRecommendationLine(normalizedRecommendation), out name, out year))
+            {
+                return true;
+            }
+
+            if (lines.Length > 1 && TryParseYear(lines[^1], out year))
+            {
+                name = CleanRecommendationTitle(string.Join(" ", lines.Take(lines.Length - 1)));
+                return !string.IsNullOrWhiteSpace(name);
+            }
+
+            return false;
+        }
+
+        private static bool TryParseTitleAndYearFromSingleLine(string line, out string name, out int year)
+        {
+            name = null;
+            year = 0;
+
+            string cleanedLine = CleanRecommendationLine(line);
+            Match match = RecommendationWithParenthesizedYearRegex.Match(cleanedLine);
+            if (!match.Success)
+            {
+                match = RecommendationWithSeparatedYearRegex.Match(cleanedLine);
+            }
+
+            if (!match.Success || !int.TryParse(match.Groups["year"].Value, out year))
+            {
+                return false;
+            }
+
+            name = CleanRecommendationTitle(match.Groups["name"].Value);
+            return !string.IsNullOrWhiteSpace(name);
+        }
+
+        private static bool TryParseYear(string rawYear, out int year)
+        {
+            year = 0;
+            if (string.IsNullOrWhiteSpace(rawYear))
+            {
+                return false;
+            }
+
+            Match yearMatch = RecommendationYearRegex.Match(CleanRecommendationLine(rawYear));
+            return yearMatch.Success && int.TryParse(yearMatch.Groups["year"].Value, out year);
+        }
+
+        private static string CleanRecommendationTitle(string value)
+        {
+            return CleanRecommendationLine(value).Trim('(', ')', '[', ']');
+        }
+
+        private static string CleanRecommendationLine(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string cleaned = value
+                .Replace('\u202F', ' ')
+                .Replace('\u00A0', ' ')
+                .Trim()
+                .Trim('"', '\'', '`')
+                .TrimStart('-', '*', '•')
+                .Trim();
+
+            foreach (string prefix in new[]
+                     {
+                         "Title:",
+                         "Movie:",
+                         "Show:",
+                         "TV Show:",
+                         "Name:",
+                         "Year:",
+                         "Release Year:",
+                         "First Air Year:"
+                     })
+            {
+                if (cleaned.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    cleaned = cleaned[prefix.Length..].Trim();
+                    break;
+                }
+            }
+
+            return cleaned;
         }
 
         private bool IsMovieInWatchHistory(IEnumerable<Movie> watchHistory, string name, int year)
