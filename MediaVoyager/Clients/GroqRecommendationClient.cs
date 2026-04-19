@@ -13,6 +13,7 @@ namespace MediaVoyager.Clients
     using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -45,6 +46,7 @@ namespace MediaVoyager.Clients
         private const int MaxRetryAttempts = 5;
         private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
         private static readonly TimeSpan TooManyRequestsRetryDelay = TimeSpan.FromSeconds(6);
+        private static readonly Regex RetryAfterSecondsRegex = new(@"Please try again in (\d+(?:\.\d+)?)s", RegexOptions.Compiled);
 
         public GroqRecommendationClient(ISecretService secretService, ILogger<GroqRecommendationClient> logger, IHttpContextAccessor httpContextAccessor)
         {
@@ -101,7 +103,10 @@ namespace MediaVoyager.Clients
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
                 {
-                    Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Rate limited (HTTP 429) (attempt {attempt}/{MaxRetryAttempts}): {ex.Message}");
+                    var retryAfter = ex is GroqRateLimitException rle && rle.RetryAfter.HasValue
+                        ? rle.RetryAfter.Value
+                        : ParseRetryAfterDelay(ex.Message);
+                    Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Rate limited (HTTP 429) (attempt {attempt}/{MaxRetryAttempts}), waiting {retryAfter.TotalSeconds:F1}s: {ex.Message}");
 
                     if (!useBackupKey)
                     {
@@ -114,7 +119,7 @@ namespace MediaVoyager.Clients
                         throw;
                     }
 
-                    await Task.Delay(TooManyRequestsRetryDelay);
+                    await Task.Delay(retryAfter);
                 }
                 catch (JsonException ex)
                 {
@@ -152,6 +157,20 @@ namespace MediaVoyager.Clients
             }
 
             return string.Empty;
+        }
+
+        private static TimeSpan ParseRetryAfterDelay(string message)
+        {
+            var match = RetryAfterSecondsRegex.Match(message);
+            if (match.Success && double.TryParse(match.Groups[1].Value,
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out double seconds))
+            {
+                return TimeSpan.FromSeconds(seconds);
+            }
+
+            return TooManyRequestsRetryDelay;
         }
 
         private async Task WaitForRateLimitSlotAsync()
@@ -219,6 +238,7 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
+                MaxTokens = 6000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -245,6 +265,7 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
+                MaxTokens = 6000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -297,10 +318,18 @@ namespace MediaVoyager.Clients
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new HttpRequestException(
-                    $"{operationName} returned {(int)response.StatusCode} ({response.StatusCode}). Response: {responseBody}",
-                    inner: null,
-                    statusCode: response.StatusCode);
+                var message = $"{operationName} returned {(int)response.StatusCode} ({response.StatusCode}). Response: {responseBody}";
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    TimeSpan? retryAfter = null;
+                    if (response.Headers.RetryAfter?.Delta is { } delta)
+                    {
+                        retryAfter = delta;
+                    }
+                    throw new GroqRateLimitException(message, retryAfter);
+                }
+
+                throw new HttpRequestException(message, inner: null, statusCode: response.StatusCode);
             }
 
             var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
@@ -318,6 +347,7 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = 0.3,
+                MaxTokens = 6000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -374,6 +404,8 @@ namespace MediaVoyager.Clients
             [JsonPropertyName("messages")] public List<ChatMessage> Messages { get; set; }
             [JsonPropertyName("model")] public string Model { get; set; }
 
+            [JsonPropertyName("max_tokens")] public int? MaxTokens { get; set; }
+
             [JsonPropertyName("temperature")] public double Temperature { get; set; } = 1;
 
             [JsonPropertyName("top_p")] public int TopP { get; set; } = 1;
@@ -403,6 +435,17 @@ namespace MediaVoyager.Clients
         }
 
         #endregion
+
+        private class GroqRateLimitException : HttpRequestException
+        {
+            public TimeSpan? RetryAfter { get; }
+
+            public GroqRateLimitException(string message, TimeSpan? retryAfter)
+                : base(message, inner: null, statusCode: HttpStatusCode.TooManyRequests)
+            {
+                RetryAfter = retryAfter;
+            }
+        }
     }
 }
 
