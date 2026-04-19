@@ -1,5 +1,6 @@
 namespace MediaVoyager.Clients
 {
+    using MediaVoyager.Constants;
     using MediaVoyager.Services.Interfaces;
     using NewHorizonLib.Services;
 
@@ -56,8 +57,9 @@ namespace MediaVoyager.Clients
 
         public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
         {
+            const string operationName = "[Groq][Movie]";
             return await ExecuteWithRetryAsync(
-                operationName: "[Groq][Movie]",
+                operationName: operationName,
                 operation: async (apiKey) =>
                 {
                     await WaitForRateLimitSlotAsync();
@@ -65,32 +67,15 @@ namespace MediaVoyager.Clients
                     Log($"[{DateTime.Now:HH:mm:ss}] [Groq][Movie] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
 
                     var requestBody = BuildGroqRequestForMovies(favoriteMovies, watchHistory, temperature);
-                    var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                    });
-
-                    using var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
-                    {
-                        Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
-                    };
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-                    var response = await _httpClient.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
-
-                    return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
+                    return await SendChatCompletionRequestAsync(operationName, requestBody, apiKey);
                 });
         }
 
         public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, double temperature)
         {
+            const string operationName = "[Groq][TV]";
             return await ExecuteWithRetryAsync(
-                operationName: "[Groq][TV]",
+                operationName: operationName,
                 operation: async (apiKey) =>
                 {
                     await WaitForRateLimitSlotAsync();
@@ -98,25 +83,7 @@ namespace MediaVoyager.Clients
                     Log($"[{DateTime.Now:HH:mm:ss}] [Groq][TV] Sending request for favorites: {string.Join(", ", favouriteTvShows.Take(2))}...");
 
                     var requestBody = BuildGroqRequestForTvShows(favouriteTvShows, watchHistory, temperature);
-                    var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                    });
-
-                    using var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
-                    {
-                        Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
-                    };
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-                    var response = await _httpClient.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
-
-                    return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
+                    return await SendChatCompletionRequestAsync(operationName, requestBody, apiKey);
                 });
         }
 
@@ -295,8 +262,9 @@ namespace MediaVoyager.Clients
 
         public async Task<string> GetIrrelevantMovieFromHistoryAsync(List<string> favoriteMovies, List<string> watchHistory)
         {
+            const string operationName = "[Groq][Cleanup]";
             return await ExecuteWithRetryAsync(
-                operationName: "[Groq][Cleanup]",
+                operationName: operationName,
                 operation: async (apiKey) =>
                 {
                     await WaitForRateLimitSlotAsync();
@@ -304,26 +272,39 @@ namespace MediaVoyager.Clients
                     Log($"[{DateTime.Now:HH:mm:ss}] [Groq][Cleanup] Identifying irrelevant movie from {watchHistory.Count} history items");
 
                     var requestBody = BuildGroqRequestForIrrelevantMovie(favoriteMovies, watchHistory);
-                    var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                    });
-
-                    using var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
-                    {
-                        Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
-                    };
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-                    var response = await _httpClient.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
-
-                    return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
+                    return await SendChatCompletionRequestAsync(operationName, requestBody, apiKey);
                 });
+        }
+
+        private async Task<string> SendChatCompletionRequestAsync(string operationName, ChatCompletionsRequest requestBody, string apiKey)
+        {
+            var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            });
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, GroqChatCompletionsUrl)
+            {
+                Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+            using var response = await _httpClient.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            CaptureGroqApiResponse(operationName, response.StatusCode, responseBody);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"{operationName} returned {(int)response.StatusCode} ({response.StatusCode}). Response: {responseBody}",
+                    inner: null,
+                    statusCode: response.StatusCode);
+            }
+
+            var groqResponse = JsonSerializer.Deserialize<ChatCompletionsResponse>(responseBody);
+            return groqResponse?.Choices?.FirstOrDefault()?.Message?.Content?.Trim() ?? string.Empty;
         }
 
         private ChatCompletionsRequest BuildGroqRequestForIrrelevantMovie(List<string> favoriteMovies, List<string> watchHistory)
@@ -364,6 +345,26 @@ namespace MediaVoyager.Clients
             // Resolve scoped IRequestLogCollector from the current HTTP request context
             var requestLogCollector = _httpContextAccessor.HttpContext?.RequestServices?.GetService<IRequestLogCollector>();
             requestLogCollector?.AddLog(message);
+        }
+
+        private void CaptureGroqApiResponse(string operationName, HttpStatusCode statusCode, string responseBody)
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null)
+            {
+                return;
+            }
+
+            string formattedResponse = string.IsNullOrWhiteSpace(responseBody) ? "<empty>" : responseBody;
+
+            if (!httpContext.Items.TryGetValue(GlobalConstant.GroqApiResponsesContextKey, out var storedResponses) ||
+                storedResponses is not List<string> groqResponses)
+            {
+                groqResponses = new List<string>();
+                httpContext.Items[GlobalConstant.GroqApiResponsesContextKey] = groqResponses;
+            }
+
+            groqResponses.Add($"{operationName} Response ({(int)statusCode} {statusCode}){Environment.NewLine}{formattedResponse}");
         }
 
         #region DTOs

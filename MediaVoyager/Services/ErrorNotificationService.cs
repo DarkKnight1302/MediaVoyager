@@ -36,6 +36,10 @@ namespace MediaVoyager.Services
 
         private static string BuildErrorEmailBody(string endpoint, string userId, string errorType, string errorDetails, string? requestLogs)
         {
+            string safeEndpoint = HttpUtility.HtmlEncode(endpoint);
+            string safeUserId = HttpUtility.HtmlEncode(userId ?? "N/A");
+            string safeErrorType = HttpUtility.HtmlEncode(errorType);
+            string safeErrorDetails = HttpUtility.HtmlEncode(errorDetails ?? "N/A");
             string logsSection = string.IsNullOrWhiteSpace(requestLogs)
                 ? string.Empty
                 : $@"
@@ -73,19 +77,21 @@ namespace MediaVoyager.Services
                                 </tr>
                                 <tr>
                                     <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#93a4b6; font-weight:600;"">Endpoint</td>
-                                    <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#f8fafc;"">{endpoint}</td>
+                                    <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#f8fafc;"">{safeEndpoint}</td>
                                 </tr>
                                 <tr>
                                     <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#93a4b6; font-weight:600;"">User ID</td>
-                                    <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#f8fafc;"">{userId ?? "N/A"}</td>
+                                    <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#f8fafc;"">{safeUserId}</td>
                                 </tr>
                                 <tr>
                                     <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#93a4b6; font-weight:600;"">Error Type</td>
-                                    <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#dc2626; font-weight:600;"">{errorType}</td>
+                                    <td style=""padding:10px; border-bottom:1px solid #2b3645; color:#dc2626; font-weight:600;"">{safeErrorType}</td>
                                 </tr>
                                 <tr>
                                     <td style=""padding:10px; color:#93a4b6; font-weight:600;"">Details</td>
-                                    <td style=""padding:10px; color:#f8fafc;"">{errorDetails}</td>
+                                    <td style=""padding:10px; color:#f8fafc;"">
+                                        <div style=""font-family:monospace; font-size:11px; white-space:pre-wrap; word-break:break-word;"">{safeErrorDetails}</div>
+                                    </td>
                                 </tr>{logsSection}
                             </table>
                         </div>

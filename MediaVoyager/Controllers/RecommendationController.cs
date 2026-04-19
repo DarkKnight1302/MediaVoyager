@@ -59,7 +59,7 @@ namespace MediaVoyager.Controllers
                         "GET /Recommendation/movie",
                         userId,
                         "Empty Response",
-                        "Movie recommendation service returned null response.",
+                        BuildRecommendationErrorDetails("Movie recommendation service returned null response."),
                         this.requestLogCollector.GetLogs());
                     return NotFound();
                 }
@@ -76,7 +76,7 @@ namespace MediaVoyager.Controllers
                     "GET /Recommendation/movie",
                     userId,
                     "Exception",
-                    $"Exception: {ex.Message}",
+                    BuildRecommendationErrorDetails(ex.ToString()),
                     this.requestLogCollector.GetLogs());
                 return StatusCode(500, "An error occurred while getting movie recommendation.");
             }
@@ -104,7 +104,7 @@ namespace MediaVoyager.Controllers
                         "GET /Recommendation/tvshow",
                         userId,
                         "Empty Response",
-                        "TV show recommendation service returned null response.",
+                        BuildRecommendationErrorDetails("TV show recommendation service returned null response."),
                         this.requestLogCollector.GetLogs());
                     return NotFound();
                 }
@@ -121,10 +121,22 @@ namespace MediaVoyager.Controllers
                     "GET /Recommendation/tvshow",
                     userId,
                     "Exception",
-                    $"Exception: {ex.Message}",
+                    BuildRecommendationErrorDetails(ex.ToString()),
                     this.requestLogCollector.GetLogs());
                 return StatusCode(500, "An error occurred while getting TV show recommendation.");
             }
+        }
+
+        private string BuildRecommendationErrorDetails(string baseDetails)
+        {
+            if (!HttpContext.Items.TryGetValue(GlobalConstant.GroqApiResponsesContextKey, out var groqResponsesObject) ||
+                groqResponsesObject is not List<string> groqResponses ||
+                groqResponses.Count == 0)
+            {
+                return baseDetails;
+            }
+
+            return $"{baseDetails}{Environment.NewLine}{Environment.NewLine}Groq API responses:{Environment.NewLine}{string.Join($"{Environment.NewLine}{Environment.NewLine}", groqResponses)}";
         }
     }
 }
