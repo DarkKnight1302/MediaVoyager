@@ -60,6 +60,7 @@ namespace MediaVoyager.Clients
         public async Task<string> GetMovieRecommendationAsync(List<string> favoriteMovies, List<string> watchHistory, double temperature = 1)
         {
             const string operationName = "[Groq][Movie]";
+            int maxTokens = 4000;
             return await ExecuteWithRetryAsync(
                 operationName: operationName,
                 operation: async (apiKey) =>
@@ -69,13 +70,16 @@ namespace MediaVoyager.Clients
                     Log($"[{DateTime.Now:HH:mm:ss}] [Groq][Movie] Sending request for favorites: {string.Join(", ", favoriteMovies.Take(2))}...");
 
                     var requestBody = BuildGroqRequestForMovies(favoriteMovies, watchHistory, temperature);
+                    requestBody.MaxTokens = maxTokens;
                     return await SendChatCompletionRequestAsync(operationName, requestBody, apiKey);
-                });
+                },
+                onRequestTooLarge: () => maxTokens = (int)(maxTokens * 0.7));
         }
 
         public async Task<string> GetTvShowRecommendationAsync(List<string> favouriteTvShows, List<string> watchHistory, double temperature)
         {
             const string operationName = "[Groq][TV]";
+            int maxTokens = 4000;
             return await ExecuteWithRetryAsync(
                 operationName: operationName,
                 operation: async (apiKey) =>
@@ -85,11 +89,13 @@ namespace MediaVoyager.Clients
                     Log($"[{DateTime.Now:HH:mm:ss}] [Groq][TV] Sending request for favorites: {string.Join(", ", favouriteTvShows.Take(2))}...");
 
                     var requestBody = BuildGroqRequestForTvShows(favouriteTvShows, watchHistory, temperature);
+                    requestBody.MaxTokens = maxTokens;
                     return await SendChatCompletionRequestAsync(operationName, requestBody, apiKey);
-                });
+                },
+                onRequestTooLarge: () => maxTokens = (int)(maxTokens * 0.7));
         }
 
-        private async Task<string> ExecuteWithRetryAsync(string operationName, Func<string, Task<string>> operation)
+        private async Task<string> ExecuteWithRetryAsync(string operationName, Func<string, Task<string>> operation, Action? onRequestTooLarge = null)
         {
             bool useBackupKey = false;
             
@@ -120,6 +126,17 @@ namespace MediaVoyager.Clients
                     }
 
                     await Task.Delay(retryAfter);
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+                {
+                    Log($"[{DateTime.Now:HH:mm:ss}] {operationName} Request too large (attempt {attempt}/{MaxRetryAttempts}), reducing max_tokens: {ex.Message}");
+
+                    if (onRequestTooLarge == null || attempt == MaxRetryAttempts)
+                    {
+                        return string.Empty;
+                    }
+
+                    onRequestTooLarge();
                 }
                 catch (JsonException ex)
                 {
@@ -238,7 +255,6 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
-                MaxTokens = 4000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -265,7 +281,6 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = temperature,
-                MaxTokens = 4000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
@@ -284,6 +299,7 @@ namespace MediaVoyager.Clients
         public async Task<string> GetIrrelevantMovieFromHistoryAsync(List<string> favoriteMovies, List<string> watchHistory)
         {
             const string operationName = "[Groq][Cleanup]";
+            int maxTokens = 4000;
             return await ExecuteWithRetryAsync(
                 operationName: operationName,
                 operation: async (apiKey) =>
@@ -293,8 +309,10 @@ namespace MediaVoyager.Clients
                     Log($"[{DateTime.Now:HH:mm:ss}] [Groq][Cleanup] Identifying irrelevant movie from {watchHistory.Count} history items");
 
                     var requestBody = BuildGroqRequestForIrrelevantMovie(favoriteMovies, watchHistory);
+                    requestBody.MaxTokens = maxTokens;
                     return await SendChatCompletionRequestAsync(operationName, requestBody, apiKey);
-                });
+                },
+                onRequestTooLarge: () => maxTokens = (int)(maxTokens * 0.7));
         }
 
         private async Task<string> SendChatCompletionRequestAsync(string operationName, ChatCompletionsRequest requestBody, string apiKey)
@@ -348,7 +366,6 @@ namespace MediaVoyager.Clients
             {
                 Model = DefaultModel,
                 Temperature = 0.3,
-                MaxTokens = 4000,
                 TopP = 1,
                 Stream = false,
                 ReasoningEffort = "default",
