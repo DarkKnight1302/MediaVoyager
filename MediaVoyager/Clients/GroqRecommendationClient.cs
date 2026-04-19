@@ -322,9 +322,10 @@ namespace MediaVoyager.Clients
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
                 {
                     TimeSpan? retryAfter = null;
-                    if (response.Headers.RetryAfter?.Delta is { } delta)
+                    if (response.Headers.TryGetValues("retry-after", out var retryAfterValues) &&
+                        int.TryParse(retryAfterValues.FirstOrDefault(), out int retryAfterSeconds))
                     {
-                        retryAfter = delta;
+                        retryAfter = TimeSpan.FromSeconds(retryAfterSeconds);
                     }
                     throw new GroqRateLimitException(message, retryAfter);
                 }
