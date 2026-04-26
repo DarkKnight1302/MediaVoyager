@@ -612,42 +612,65 @@ align-items: center;
  }
 
         function updateDashboard(data) {
-     // Update stat cards
-      document.getElementById('totalUsers').textContent =
-          (data.user_signups?.total_users || 0).toLocaleString();
-     document.getElementById('dailyActiveUsers').textContent =
+            // Update stat cards
+            document.getElementById('totalUsers').textContent =
+                (data.user_signups?.total_users || 0).toLocaleString();
+            document.getElementById('dailyActiveUsers').textContent =
                 (data.active_users?.daily_active_users || 0).toLocaleString();
-    document.getElementById('monthlyActiveUsers').textContent =
-           (data.active_users?.monthly_active_users || 0).toLocaleString();
+            document.getElementById('monthlyActiveUsers').textContent =
+                (data.active_users?.monthly_active_users || 0).toLocaleString();
             document.getElementById('movieRecommendations').textContent =
-        (data.recommendations?.total_movie_recommendations || 0).toLocaleString();
+                (data.recommendations?.total_movie_recommendations || 0).toLocaleString();
             document.getElementById('tvRecommendations').textContent =
-   (data.recommendations?.total_tv_recommendations || 0).toLocaleString();
+                (data.recommendations?.total_tv_recommendations || 0).toLocaleString();
 
-       const totalSearches = (data.searches?.total_movie_searches || 0) +
-   (data.searches?.total_tv_searches || 0);
-       document.getElementById('totalSearches').textContent = totalSearches.toLocaleString();
+            const totalSearches = (data.searches?.total_movie_searches || 0) +
+                (data.searches?.total_tv_searches || 0);
+            document.getElementById('totalSearches').textContent = totalSearches.toLocaleString();
 
             const watchlistTotal = (data.watchlist?.total_movies_added_to_watchlist || 0) +
-          (data.watchlist?.total_tv_added_to_watchlist || 0);
-      document.getElementById('watchlistAdditions').textContent = watchlistTotal.toLocaleString();
+                (data.watchlist?.total_tv_added_to_watchlist || 0);
+            document.getElementById('watchlistAdditions').textContent = watchlistTotal.toLocaleString();
 
-        // Destroy existing charts
-  destroyCharts();
+            document.getElementById('totalLogins').textContent =
+                (data.logins?.total_logins || 0).toLocaleString();
+            document.getElementById('retentionRate').textContent =
+                (data.retention?.retention_rate || 0) + '%';
+            document.getElementById('newUsers').textContent =
+                (data.content_engagement?.new_users_in_period || 0).toLocaleString();
+            document.getElementById('totalActions').textContent =
+                (data.content_engagement?.total_actions || 0).toLocaleString();
+            document.getElementById('avgActions').textContent =
+                (data.content_engagement?.avg_actions_per_user || 0).toFixed(1);
+
+            const totalFavourites = (data.favourites?.total_movie_favourites || 0) +
+                (data.favourites?.total_tv_favourites || 0);
+            document.getElementById('totalFavourites').textContent = totalFavourites.toLocaleString();
+
+            // Destroy existing charts
+            destroyCharts();
 
             // Create charts
-       createSignupsChart(data.user_signups?.signups_by_date || []);
+            createSignupsChart(data.user_signups?.signups_by_date || []);
+            createLoginsChart(data.logins?.logins_by_date || []);
             createDAUChart(data.active_users?.daily_active_users_by_date || []);
-          createRecommendationsChart(
-  data.recommendations?.movie_recommendations_by_date || [],
-      data.recommendations?.tv_recommendations_by_date || []
-      );
-      createSearchChart(
-         data.searches?.movie_searches_by_date || [],
-         data.searches?.tv_searches_by_date || []
-     );
-   createWatchlistChart(data.watchlist?.watchlist_activity_by_date || []);
-  createSearchUsersChart(data.searches?.unique_users_by_date || []);
+            createRetentionChart(data.retention?.returning_users_by_date || []);
+            createEngagementPieChart(data.content_engagement?.engagement_by_type || []);
+            createRecommendationsChart(
+                data.recommendations?.movie_recommendations_by_date || [],
+                data.recommendations?.tv_recommendations_by_date || []
+            );
+            createFavouritesChart(
+                data.favourites?.movie_favourites_by_date || [],
+                data.favourites?.tv_favourites_by_date || []
+            );
+            createWatchlistChart(data.watchlist?.watchlist_activity_by_date || []);
+            createSearchChart(
+                data.searches?.movie_searches_by_date || [],
+                data.searches?.tv_searches_by_date || []
+            );
+            createTopSearchChart(data.searches?.top_searched_items || []);
+            createSearchUsersChart(data.searches?.unique_users_by_date || []);
             createApiFailuresChart(data.api_failures?.failures_by_api_and_date || []);
         }
 
