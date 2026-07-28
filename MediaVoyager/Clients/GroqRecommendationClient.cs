@@ -40,7 +40,7 @@ namespace MediaVoyager.Clients
         private static int DailyRequestCount = 0;
 
         private const string GroqChatCompletionsUrl = "https://api.groq.com/openai/v1/chat/completions";
-        private const string DefaultModel = "qwen/qwen3.6-27b";
+        private const string DefaultModel = "openai/gpt-oss-120b";
 
         // --- Retry ---
         private const int MaxRetryAttempts = 5;
@@ -257,7 +257,7 @@ namespace MediaVoyager.Clients
                 Temperature = temperature,
                 TopP = 1,
                 Stream = false,
-                ReasoningEffort = "default",
+                ReasoningEffort = "medium",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -283,7 +283,7 @@ namespace MediaVoyager.Clients
                 Temperature = temperature,
                 TopP = 1,
                 Stream = false,
-                ReasoningEffort = "default",
+                ReasoningEffort = "medium",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -368,7 +368,7 @@ namespace MediaVoyager.Clients
                 Temperature = 0.3,
                 TopP = 1,
                 Stream = false,
-                ReasoningEffort = "default",
+                ReasoningEffort = "medium",
                 Messages = new List<ChatMessage>
                 {
                     new ChatMessage
@@ -432,7 +432,7 @@ namespace MediaVoyager.Clients
 
             [JsonPropertyName("include_reasoning")] public bool IncludeReasoning { get; set; } = false;
 
-            [JsonPropertyName("reasoning_effort")] public string ReasoningEffort { get; set; } = "default";
+            [JsonPropertyName("reasoning_effort")] public string ReasoningEffort { get; set; } = "medium";
 
         }
 
