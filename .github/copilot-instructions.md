@@ -12,7 +12,7 @@ dotnet run --project MediaVoyager/MediaVoyager.csproj
 dotnet publish MediaVoyager/MediaVoyager.csproj -c Release -o ./publish
 ```
 
-The app runs on `http://localhost:5000` in development. Health check: `GET /health`.
+The app runs on `http://localhost:5211` in development (see `Properties/launchSettings.json`). Health check: `GET /health`.
 
 There are no tests in this repository.
 
@@ -84,7 +84,12 @@ Newtonsoft.Json with **snake_case** naming strategy globally. TMDbLib's `Toleran
 
 ### Secrets
 
-Retrieved at runtime via `ISecretService.GetSecretValue("key")`. Required secrets: `gemini_api_key`, `groq_api_key`, `tmdb_auth`, `omdb_api_key`.
+Retrieved at runtime via `ISecretService.GetSecretValue("key")`. Required secrets: `gemini_api_key`, `groq_api_key`, `tmdb_api_key`, `tmdb_auth`, `omdb_api_key`.
+
+- `tmdb_api_key` — v3 API key passed to the `TMDbLib` SDK (`new TMDbClient(apiKey)`)
+- `tmdb_auth` — v4 Bearer token stored in `SecretUtility.tmdbAuthHeader` for direct HTTP requests
+
+For local development, set these via .NET user secrets (`dotnet user-secrets set "key" "value"` — the `UserSecretsId` is set in the `.csproj`).
 
 ### Rate Limiting
 
@@ -118,3 +123,24 @@ User favorites, watchlists, and watch history use `HashSet<T>` for automatic ded
 ### Activity Logging
 
 User actions are tracked via `IUserActivityRepository.LogActivityAsync(userId, activityType, details)` for dashboard analytics.
+
+### Request DTOs vs Response Models
+
+- **`ApiRequest/`**: Inbound request DTOs (e.g., `AddUserMovieRequest`, `WatchlistMovieRequest`)
+- **`Models/`**: Outbound response models and shared DTOs (e.g., `MovieResponse`, `Movie`, `TvShow`)
+
+### Unauthenticated Endpoints
+
+`DashboardController` (`api/Dashboard`) and `ProviderController` (`api/Provider`) have no `[Authorize]` attribute — they are publicly accessible. `ProviderController` lets callers switch the active AI provider at runtime (`POST api/Provider/{Gemini|Groq}`).
+
+### Background Jobs
+
+A Quartz.NET job (`WatchHistoryCleanupJob`) runs daily at 03:00 UTC (with a 5-minute delayed first start) to trim oversized watch histories in Cosmos DB. Implement new scheduled jobs as `IJob` with `[DisallowConcurrentExecution]` and register them in `Program.cs` using the existing `AddJob`/`AddTrigger` pattern.
+
+### Dashboard UI
+
+Static files are served from `wwwroot/`. The `/dashboard` path redirects to `/dashboard/index.html` (mapped in `Program.cs`). `ApiRequestLoggingMiddleware` records status codes only for `/api/*` paths to feed dashboard analytics.
+
+### Nullable Context
+
+`<Nullable>enable</Nullable>` is set in the `.csproj`. All new code must be null-safe; use `?` annotations and null checks where needed.
